@@ -60,7 +60,6 @@ export default (canvas, state) => {
       body: characterBody,
       collisionMask: SCENERY_GROUP,
       velocityXSmoothing: 0.0001,
-      timeToJumpApex: 0.4,
       skinWidth: 0.1
     });
 
@@ -203,6 +202,7 @@ export default (canvas, state) => {
 
   // Animation loop
   function animate(time){
+    state.frame ++
     requestAnimationFrame(animate);
 
     // Compute elapsed time since last frame
@@ -221,18 +221,10 @@ export default (canvas, state) => {
   }
 
   function updateDebugLog(){
-    state.debug = [
-      'player.collisions.above: ' + player.collisions.above,
-      'player.collisions.below: ' + player.collisions.below,
-      'player.collisions.left: ' + player.collisions.left,
-      'player.collisions.right: ' + player.collisions.right,
-      'player.collisions.climbingSlope: ' + player.collisions.climbingSlope,
-      'player.collisions.descendingSlope: ' + player.collisions.descendingSlope,
-      'player.collisions.slopeAngle: ' + player.collisions.slopeAngle,
-      'player.collisions.slopeAngleOld: ' + player.collisions.slopeAngleOld,
-      'player.collisions.faceDir: ' + player.collisions.faceDir,
-      'player.collisions.fallingThroughPlatform: ' + player.collisions.fallingThroughPlatform,
-      'scaledVelocity: '+player.scaledVelocity,
-    ]
+    Object.assign(state.collisions, player.collisions)
+    const { position } = player.body
+    const { velocity } = player
+    const max_speed_y = Math.max(state.body.max_speed_y, Math.abs(velocity[1]))
+    Object.assign(state.body, { position, velocity, max_speed_y })
   }
 }

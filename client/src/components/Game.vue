@@ -1,8 +1,12 @@
 <template>
   <canvas width="600" height="400" ref="canvas"></canvas>
   <code id="debug">
-    <div v-for="line, i in state.debug">
-      {{ line }}
+    <div>frame: {{ state.frame }}</div>
+    <div v-for="line, i in state.collisions">
+      {{ i }}: {{ line }}
+    </div>
+    <div v-for="line, i in state.body">
+      {{ i }}: {{ line }}
     </div>
   </code>
 </template>
@@ -12,10 +16,10 @@ import game from './game'
 
 export default {
   data() {
-    return { game: null, state: {} }
+    return { state: {collisions: {}, body: {max_speed_y: 0}, frame: 0} }
   },
   mounted() {
-    return this.game = game(this.$refs.canvas, this.state)
+    return game(this.$refs.canvas, this.state)
   }
 }
 </script>
