@@ -35,7 +35,7 @@ export default (canvas, state) => {
     addStaticBox(-3, 3, 0, 3, 1);
     addStaticBox(0, -1, 0, 7, 1);
     addStaticBox(-6, 0, Math.PI / 4, 1, 7);
-    addStaticBox(4, 2, 0, 1, 6);
+    addStaticBox(4, 6, 0, 1, 100);
     addStaticCircle(-9, 1, 1, 2);
 
     // Add a character body
@@ -223,8 +223,8 @@ export default (canvas, state) => {
   function updateDebugLog(){
     Object.assign(state.collisions, player.collisions)
     const { position } = player.body
-    const { velocity } = player
+    const { velocity, gravity } = player
     const max_speed_y = Math.max(state.body.max_speed_y, Math.abs(velocity[1]))
-    Object.assign(state.body, { position, velocity, max_speed_y })
+    Object.assign(state.body, { position, velocity, max_speed_y, gravity })
   }
 }

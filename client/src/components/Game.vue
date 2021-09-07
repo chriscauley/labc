@@ -1,12 +1,16 @@
 <template>
-  <canvas width="600" height="400" ref="canvas"></canvas>
-  <code id="debug">
-    <div>frame: {{ state.frame }}</div>
-    <div v-for="line, i in state.collisions">
-      {{ i }}: {{ line }}
+  <canvas width="800" height="800" ref="canvas"></canvas>
+  <code id="debug" style="display: flex">
+    <div>
+      <div>frame: {{ state.frame }}</div>
+      <div v-for="line, i in state.body">
+        {{ i }}: {{ pprint(line) }}
+      </div>
     </div>
-    <div v-for="line, i in state.body">
-      {{ i }}: {{ line }}
+    <div>
+      <div v-for="line, i in state.collisions">
+        {{ i }}: {{ pprint(line) }}
+      </div>
     </div>
   </code>
 </template>
@@ -20,6 +24,19 @@ export default {
   },
   mounted() {
     return game(this.$refs.canvas, this.state)
+  },
+  methods: {
+    pprint(i) {
+      if (i instanceof Float32Array) {
+        i = [...i]
+      }
+      if (Array.isArray(i)) {
+        return i.slice().map(this.pprint).join(',')
+      } else if (typeof i === 'number') {
+        return i.toFixed(2)
+      }
+      return i
+    }
   }
 }
 </script>

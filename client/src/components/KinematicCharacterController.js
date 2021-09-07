@@ -401,10 +401,10 @@ export default class KinematicCharacterController extends Controller {
 		  velocityXMin,
 	  })
 
-	  this.gravity = -(2 * maxJumpHeight) / Math.pow(timeToJumpApex, 2);
+	  this._gravity = this.gravity = -(2 * maxJumpHeight) / Math.pow(timeToJumpApex, 2);
 	  this.maxJumpVelocity = Math.abs(this.gravity) * timeToJumpApex;
 	  this.minJumpVelocity = Math.sqrt(2 * Math.abs(this.gravity) * minJumpHeight);
-    console.log(this.maxJumpVelocity, this.minJumpVelocity)
+    this.terminalVelocity = -this.maxJumpVelocity
 
 	  this.velocity = vec2.create();
     this.scaledVelocity = vec2.create();
@@ -425,6 +425,18 @@ export default class KinematicCharacterController extends Controller {
   update(deltaTime) {
 	  var input = this.input;
     const { collisions, velocity } = this
+	  const wallSliding = (collisions.left || collisions.right) && !collisions.below && velocity[1] < 0
+    if (this.terminalVelocity && velocity[1] < this.terminalVelocity) {
+      // deltaTime was spent falling faster than terminalVelocity
+      this.body.position[1] += deltaTime * this.terminalVelocity - deltaTime * velocity[1]
+      velocity[1] = this.terminalVelocity
+      this.gravity = 0
+    }
+    this._lastY = this.body.position[1]
+
+    if (velocity[1] > this.terminalVelocity) {
+      this.gravity = this._gravity
+    }
 
 	  var wallDirX = (collisions.left) ? -1 : 1;
 	  var targetVelocityX = input[0] * this.moveSpeed;
@@ -437,9 +449,7 @@ export default class KinematicCharacterController extends Controller {
 		  velocity[0] = 0;
 	  }
 
-	  var wallSliding = false;
-	  if ((collisions.left || collisions.right) && !collisions.below && velocity[1] < 0) {
-		  wallSliding = true;
+	  if (wallSliding) {
 
 		  if (velocity[1] < -this.wallSlideSpeedMax) {
 			  velocity[1] = -this.wallSlideSpeedMax;
