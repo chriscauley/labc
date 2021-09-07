@@ -369,9 +369,9 @@ export default class KinematicCharacterController extends Controller {
       moveSpeed = 6,
       wallSlideSpeedMax = 3,
       wallStickTime = 0.25,
-      wallJumpClimb = [20, 20],
-      wallJumpOff = [20, 20],
-      wallLeap = [20, 20],
+      wallJumpClimb = [20, 20], // holding towards wall
+      wallLeap = [20, 20], // holding away from wall
+      wallJumpOff = [20, 20], // holding neither
       timeToJumpApex = 0.4,
       maxJumpHeight = 4,
       minJumpHeight = 1,
