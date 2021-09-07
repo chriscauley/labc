@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@unrest/eslint-config": "^0.0.5",
+    "@unrest/vue-mousetrap": "^0.0.6",
     "core-js": "^3.6.5",
     "lodash": "^4.17.21",
     "p2": "^0.7.1",

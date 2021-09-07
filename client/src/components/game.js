@@ -27,6 +27,7 @@ export default class Game {
       cameraPos: [0, 0],
       zoom: 50,
       rayDebugData: [],
+      keys: { left: 0, right: 0 },
     })
 
     this.ctx.lineWidth = 1 / this.zoom
@@ -39,8 +40,8 @@ export default class Game {
     this.addStaticBox(-3, 3, 3, 1)
     this.addStaticBox(0, -1, 7, 1)
     this.addStaticBox(-6, 0, 1, 7, Math.PI / 4)
-    this.addStaticBox(4, 6, 1, 100)
-    this.addStaticBox(0, 19, 1, 31)
+    this.addStaticBox(4, 5, 1, 100)
+    this.addStaticBox(0, 5, 1, 1)
     this.addStaticCircle(-9, 1, 2, 1)
 
     // Add a character body
@@ -76,43 +77,34 @@ export default class Game {
     })
 
     // Store ray debug data
-    this.player.on('raycast', (evt) => {
-      this.rayDebugData.push([evt.ray.from[0], evt.ray.from[1], evt.ray.to[0], evt.ray.to[1]])
+    this.player.on('raycast', ({ ray }) => {
+      this.rayDebugData.push([ray.from[0], ray.from[1], ray.to[0], ray.to[1]])
     })
 
     // Set up key listeners
-    let left = 0
-    let right = 0
-    window.addEventListener('keydown', (evt) => {
-      switch (evt.keyCode) {
-        case 38: // up key
-        case 32:
-          this.player.setJumpKeyState(true)
-          break // space key
-        case 39:
-          right = 1
-          break // right key
-        case 37:
-          left = 1
-          break // left key
-      }
-      this.player.input[0] = right - left
-    })
-    window.addEventListener('keyup', (evt) => {
-      switch (evt.keyCode) {
-        case 38: // up
-        case 32:
-          this.player.setJumpKeyState(false)
-          break
-        case 39:
-          right = 0
-          break
-        case 37:
-          left = 0
-          break
-      }
-      this.player.input[0] = right - left
-    })
+    this.actions = {
+      up: {
+        keydown: () => this.player.setJumpKeyState(true),
+        keyup: () => this.player.setJumpKeyState(false),
+      },
+      left: {
+        keydown: () => this.setKeys({ left: 1 }),
+        keyup: () => this.setKeys({ left: 0 }),
+      },
+      right: {
+        keydown: () => this.setKeys({ right: 1 }),
+        keyup: () => this.setKeys({ right: 0 }),
+      },
+    }
+  }
+
+  close() {
+    cancelAnimationFrame(this._frame)
+  }
+
+  setKeys(keys) {
+    Object.assign(this.keys, keys)
+    this.player.input[0] = this.keys.right - this.keys.left
   }
 
   addStaticCircle(x, y, radius, angle = 0) {
@@ -197,7 +189,8 @@ export default class Game {
   // Animation loop
   _animate(time) {
     this.state.frame++
-    requestAnimationFrame(this.animate)
+    cancelAnimationFrame(this._frame)
+    this._frame = requestAnimationFrame(this.animate)
 
     // Compute elapsed time since last frame
     let deltaTime = this.lastTime ? (time - this.lastTime) / 1000 : 0

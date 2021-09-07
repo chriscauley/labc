@@ -1,5 +1,5 @@
 <template>
-  <canvas width="800" height="800" ref="canvas"></canvas>
+  <canvas width="800" height="700" ref="canvas"></canvas>
   <code id="debug" style="display: flex">
     <div>
       <div>frame: {{ state.frame }}</div>
@@ -12,14 +12,29 @@
 </template>
 
 <script>
+import Mousetrap from '@unrest/vue-mousetrap'
+
 import game from './game'
 
 export default {
+  mixins: [Mousetrap.Mixin],
   data() {
-    return { state: { collisions: {}, body: { max_speed_y: 0 }, frame: 0 } }
+    return { game: null, state: { collisions: {}, body: { max_speed_y: 0 }, frame: 0 } }
+  },
+  computed: {
+    mousetrap() {
+      if (!this.game) {
+        return {}
+      }
+      const { up, left, right } = this.game.actions
+      return { 'up,space': up, left, right }
+    },
   },
   mounted() {
-    return new game(this.$refs.canvas, this.state)
+    return (this.game = new game(this.$refs.canvas, this.state))
+  },
+  unmounted() {
+    this.game.close()
   },
   methods: {
     pprint(i) {
