@@ -1,17 +1,14 @@
 import p2 from 'p2'
+import { cloneDeep } from 'lodash'
 /**
  * Attaches a KinematicCharacterController class on the global "p2" object.
  * Original code from: https://github.com/SebLague/2DPlatformer-Tutorial
  */
 
-// imports
-var vec2 = p2.vec2;
-var Ray = p2.Ray;
-var RaycastResult = p2.RaycastResult;
-var AABB = p2.AABB;
-var EventEmitter = p2.EventEmitter;
+window.p2 = p2
 
-// constants
+const { vec2, Ray, RaycastResult, AABB, EventEmitter } = p2
+
 var ZERO = vec2.create();
 var UNIT_Y = vec2.fromValues(0,1);
 
@@ -36,41 +33,21 @@ function expandAABB(aabb, amount){
 	aabb.upperBound[1] += halfAmount;
 }
 
-/**
- * @class RaycastController
- * @constructor
- * @param {object} [options]
- * @param {number} [options.collisionMask=-1]
- * @param {number} [options.skinWidth=0.015]
- * @param {number} [options.horizontalRayCount=4]
- * @param {number} [options.verticalRayCount=4]
- */
-function RaycastController(options) {
+function RaycastController(options={}) {
 	options = options || {};
 	EventEmitter.apply(this, arguments);
 
 	this.world = options.world;
 	this.body = options.body;
 
-	/**
-	 * @property {number} collisionMask
-	 */
-	this.collisionMask = options.collisionMask !== undefined ? options.collisionMask : -1;
+  const {
+    collisionMask= -1,
+    skinWidth= 0.015,
+    horizontalRayCount=4,
+    verticalRayCount=4,
+  } = options
 
-	/**
-	 * @property {number} skinWidth
-	 */
-	this.skinWidth = options.skinWidth !== undefined ? options.skinWidth : 0.015;
-
-	/**
-	 * @property {number} horizontalRayCount
-	 */
-	this.horizontalRayCount = options.horizontalRayCount !== undefined ? options.horizontalRayCount : 4;
-
-	/**
-	 * @property {number} verticalRayCount
-	 */
-	this.verticalRayCount = options.verticalRayCount !== undefined ? options.verticalRayCount : 4;
+  Object.assign(this, {collisionMask, skinWidth, horizontalRayCount, verticalRayCount})
 
 	this.horizontalRaySpacing = null;
 	this.verticalRaySpacing = null;
@@ -122,28 +99,15 @@ RaycastController.prototype.calculateRaySpacing = (function() {
 	};
 })();
 
-/**
- * @class Controller
- * @extends {RaycastController}
- * @constructor
- * @param {object} [options]
- * @param {number} [options.maxClimbAngle]
- * @param {number} [options.maxDescendAngle]
- */
-function Controller(options) {
+function Controller(options={}) {
 	RaycastController.apply(this, arguments);
 
 	var DEG_TO_RAD = Math.PI / 180;
-
-	/**
-	 * @property {number} maxClimbAngle
-	 */
-	this.maxClimbAngle = options.maxClimbAngle !== undefined ? options.maxClimbAngle : 80 * DEG_TO_RAD;
-
-	/**
-	 * @property {number} maxDescendAngle
-	 */
-	this.maxDescendAngle = options.maxDescendAngle !== undefined ? options.maxDescendAngle : 80 * DEG_TO_RAD;
+  const {
+    maxClimbAngle= 80 * DEG_TO_RAD,
+    maxDescendAngle= 80 * DEG_TO_RAD,
+  } = options
+  Object.apply(this, { maxClimbAngle, maxDescendAngle })
 
 	this.collisions = {
 		above: false,
@@ -408,58 +372,48 @@ Controller.prototype.resetFallingThroughPlatform = function() {
 	this.collisions.fallingThroughPlatform = false;
 };
 
-/**
- * @class KinematicCharacterController
- * @extends {Controller}
- * @constructor
- * @param {object} [options]
- * @param {number} [options.accelerationTimeAirborne=0.2]
- * @param {number} [options.accelerationTimeGrounded=0.1]
- * @param {number} [options.moveSpeed=6]
- * @param {number} [options.wallSlideSpeedMax=3]
- * @param {number} [options.wallStickTime=0.25]
- * @param {array} [options.wallJumpClimb]
- * @param {array} [options.wallJumpOff]
- * @param {array} [options.wallLeap]
- * @param {number} [options.timeToJumpApex=0.4]
- * @param {number} [options.maxJumpHeight=4]
- * @param {number} [options.minJumpHeight=1]
- * @param {number} [options.velocityXSmoothing=0.2]
- * @param {number} [options.velocityXMin=0.0001]
- * @param {number} [options.maxClimbAngle]
- * @param {number} [options.maxDescendAngle]
- * @param {number} [options.collisionMask=-1]
- * @param {number} [options.skinWidth=0.015]
- * @param {number} [options.horizontalRayCount=4]
- * @param {number} [options.verticalRayCount=4]
- */
-export default function KinematicCharacterController(options) {
+export default function KinematicCharacterController(options={}) {
 	Controller.apply(this, arguments);
 
-	options = options || {};
-
 	this.input = vec2.create();
+	const {
+		accelerationTimeAirborne= 0.2,
+		accelerationTimeGrounded= 0.1,
+		moveSpeed= 6,
+		wallSlideSpeedMax= 3,
+		wallStickTime= 0.25,
+		wallJumpClimb= [10, 10],
+		wallJumpOff= [10, 10],
+		wallLeap= [10, 10],
+		timeToJumpApex = 0.4,
+		maxJumpHeight = 4,
+		minJumpHeight = 1,
+		velocityXSmoothing = 0.2,
+		velocityXMin = 0.0001,
+	} = cloneDeep(options)
 
-	this.accelerationTimeAirborne = options.accelerationTimeAirborne !== undefined ? options.accelerationTimeAirborne : 0.2;
-	this.accelerationTimeGrounded = options.accelerationTimeGrounded !== undefined ? options.accelerationTimeGrounded : 0.1;
-	this.moveSpeed = options.moveSpeed !== undefined ? options.moveSpeed : 6;
-	this.wallSlideSpeedMax = options.wallSlideSpeedMax !== undefined ? options.wallSlideSpeedMax : 3;
-	this.wallStickTime = options.wallStickTime !== undefined ? options.wallStickTime : 0.25;
+	Object.assign(this, {
+		accelerationTimeAirborne,
+		accelerationTimeGrounded,
+		moveSpeed,
+		wallSlideSpeedMax,
+		wallStickTime,
+		wallJumpClimb,
+		wallJumpOff,
+		wallLeap,
+		timeToJumpApex,
+		maxJumpHeight,
+		minJumpHeight,
+		velocityXSmoothing,
+		velocityXMin,
+	})
 
-	this.wallJumpClimb = vec2.clone(options.wallJumpClimb || [10, 10]);
-	this.wallJumpOff = vec2.clone(options.wallJumpOff || [10, 10]);
-	this.wallLeap = vec2.clone(options.wallLeap || [10, 10]);
-
-	var timeToJumpApex = options.timeToJumpApex !== undefined ? options.timeToJumpApex : 0.4;
-	var maxJumpHeight = options.maxJumpHeight !== undefined ? options.maxJumpHeight : 4;
-	var minJumpHeight = options.minJumpHeight !== undefined ? options.minJumpHeight : 1;
 	this.gravity = -(2 * maxJumpHeight) / Math.pow(timeToJumpApex, 2);
 	this.maxJumpVelocity = Math.abs(this.gravity) * timeToJumpApex;
 	this.minJumpVelocity = Math.sqrt(2 * Math.abs(this.gravity) * minJumpHeight);
 
 	this.velocity = vec2.create();
-	this.velocityXSmoothing = options.velocityXSmoothing !== undefined ? options.velocityXSmoothing : 0.2;
-	this.velocityXMin = options.velocityXMin !== undefined ? options.velocityXMin : 0.0001;
+  this.scaledVelocity = vec2.create();
 
 	this.timeToWallUnstick = 0;
 	this._requestJump = false;
@@ -485,79 +439,76 @@ KinematicCharacterController.prototype.setJumpKeyState = function(isDown) {
  * Should be executed after each physics tick, using the physics deltaTime.
  * @param {number} deltaTime
  */
-KinematicCharacterController.prototype.update = (function(){
-	var scaledVelocity = vec2.create();
-	return function (deltaTime) {
-		var input = this.input;
-		var velocity = this.velocity;
-		var controller = this;
+KinematicCharacterController.prototype.update = function (deltaTime) {
+	var input = this.input;
+  const { collisions, velocity } = this
 
-		var wallDirX = (controller.collisions.left) ? -1 : 1;
-		var targetVelocityX = input[0] * this.moveSpeed;
+	var wallDirX = (collisions.left) ? -1 : 1;
+	var targetVelocityX = input[0] * this.moveSpeed;
 
-		var smoothing = this.velocityXSmoothing;
-		smoothing *= controller.collisions.below ? this.accelerationTimeGrounded : this.accelerationTimeAirborne;
-		var factor = 1 - Math.pow(smoothing, deltaTime);
-		velocity[0]	= lerp(factor, velocity[0], targetVelocityX);
-		if(Math.abs(velocity[0]) < this.velocityXMin){
-			velocity[0] = 0;
+	var smoothing = this.velocityXSmoothing;
+	smoothing *= collisions.below ? this.accelerationTimeGrounded : this.accelerationTimeAirborne;
+	var factor = 1 - Math.pow(smoothing, deltaTime);
+	velocity[0]	= lerp(factor, velocity[0], targetVelocityX);
+	if(Math.abs(velocity[0]) < this.velocityXMin){
+		velocity[0] = 0;
+	}
+
+	var wallSliding = false;
+	if ((collisions.left || collisions.right) && !collisions.below && velocity[1] < 0) {
+		wallSliding = true;
+
+		if (velocity[1] < -this.wallSlideSpeedMax) {
+			velocity[1] = -this.wallSlideSpeedMax;
 		}
 
-		var wallSliding = false;
-		if ((controller.collisions.left || controller.collisions.right) && !controller.collisions.below && velocity[1] < 0) {
-			wallSliding = true;
+		if (this.timeToWallUnstick > 0) {
+			velocity[0] = 0;
 
-			if (velocity[1] < -this.wallSlideSpeedMax) {
-				velocity[1] = -this.wallSlideSpeedMax;
-			}
-
-			if (this.timeToWallUnstick > 0) {
-				velocity[0] = 0;
-
-				if (input[0] !== wallDirX && input[0] !== 0) {
-					this.timeToWallUnstick -= deltaTime;
-				} else {
-					this.timeToWallUnstick = this.wallStickTime;
-				}
+			if (input[0] !== wallDirX && input[0] !== 0) {
+				this.timeToWallUnstick -= deltaTime;
 			} else {
 				this.timeToWallUnstick = this.wallStickTime;
 			}
+		} else {
+			this.timeToWallUnstick = this.wallStickTime;
 		}
+	}
 
-		if (this._requestJump) {
-			this._requestJump = false;
+	if (this._requestJump) {
+		this._requestJump = false;
 
-			if (wallSliding) {
-				if (wallDirX === input[0]) {
-					velocity[0] = -wallDirX * this.wallJumpClimb[0];
-					velocity[1] = this.wallJumpClimb[1];
-				} else if (input[0] === 0) {
-					velocity[0] = -wallDirX * this.wallJumpOff[0];
-					velocity[1] = this.wallJumpOff[1];
-				} else {
-					velocity[0] = -wallDirX * this.wallLeap[0];
-					velocity[1] = this.wallLeap[1];
-				}
-			}
-
-			if (controller.collisions.below) {
-				velocity[1] = this.maxJumpVelocity;
+		if (wallSliding) {
+			if (wallDirX === input[0]) {
+				velocity[0] = -wallDirX * this.wallJumpClimb[0];
+				velocity[1] = this.wallJumpClimb[1];
+			} else if (input[0] === 0) {
+				velocity[0] = -wallDirX * this.wallJumpOff[0];
+				velocity[1] = this.wallJumpOff[1];
+			} else {
+				velocity[0] = -wallDirX * this.wallLeap[0];
+				velocity[1] = this.wallLeap[1];
 			}
 		}
 
-		if (this._requestUnJump) {
-			this._requestUnJump = false;
-			if (velocity[1] > this.minJumpVelocity) {
-				velocity[1] = this.minJumpVelocity;
-			}
+		if (collisions.below) {
+			velocity[1] = this.maxJumpVelocity;
 		}
+	}
 
-		velocity[1] += this.gravity * deltaTime;
-		vec2.scale(scaledVelocity, velocity, deltaTime);
-		controller.move(scaledVelocity, input);
-
-		if (controller.collisions.above || controller.collisions.below) {
-			velocity[1] = 0;
+	if (this._requestUnJump) {
+		this._requestUnJump = false;
+		if (velocity[1] > this.minJumpVelocity) {
+			velocity[1] = this.minJumpVelocity;
 		}
-	};
-})();
+	}
+
+	velocity[1] += this.gravity * deltaTime;
+	vec2.scale(this.scaledVelocity, velocity, deltaTime);
+	this.move(this.scaledVelocity, input);
+
+	if (collisions.above || collisions.below) {
+		velocity[1] = 0;
+	}
+};
+

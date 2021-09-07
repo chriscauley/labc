@@ -31,6 +31,7 @@ export default (canvas, state) => {
     world = new p2.World();
 
     // Add some scenery
+    addStaticBox(0,0,0,1, 1)
     addStaticBox(-3, 3, 0, 3, 1);
     addStaticBox(0, -1, 0, 7, 1);
     addStaticBox(-6, 0, Math.PI / 4, 1, 7);
@@ -39,8 +40,8 @@ export default (canvas, state) => {
 
     // Add a character body
     var characterShape = new p2.Box({
-      width: 1,
-      height: 1.5,
+      width: 8/16,
+      height: 2,
       collisionGroup: PLAYER_GROUP
     });
     characterBody = new p2.Body({
@@ -230,7 +231,8 @@ export default (canvas, state) => {
       'player.collisions.slopeAngle: ' + player.collisions.slopeAngle,
       'player.collisions.slopeAngleOld: ' + player.collisions.slopeAngleOld,
       'player.collisions.faceDir: ' + player.collisions.faceDir,
-      'player.collisions.fallingThroughPlatform: ' + player.collisions.fallingThroughPlatform
+      'player.collisions.fallingThroughPlatform: ' + player.collisions.fallingThroughPlatform,
+      'scaledVelocity: '+player.scaledVelocity,
     ]
   }
 }
