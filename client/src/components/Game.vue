@@ -14,7 +14,7 @@
 <script>
 import Mousetrap from '@unrest/vue-mousetrap'
 
-import game from './game'
+import game from '@/game/Game'
 
 export default {
   mixins: [Mousetrap.Mixin],
