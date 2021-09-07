@@ -19,7 +19,7 @@ export default {
     return { state: { collisions: {}, body: { max_speed_y: 0 }, frame: 0 } }
   },
   mounted() {
-    return game(this.$refs.canvas, this.state)
+    return new game(this.$refs.canvas, this.state)
   },
   methods: {
     pprint(i) {

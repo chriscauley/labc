@@ -1,86 +1,93 @@
 import p2 from 'p2'
 import KinematicCharacterController from './KinematicCharacterController'
 
-export default (canvas, state) => {
-  const ctx = canvas.getContext('2d')
-  const w = canvas.width
-  const h = canvas.height
+// Collision groups
+const SCENERY_GROUP = 0x01
+const PLAYER_GROUP = 0x02
+const fixedDeltaTime = 1 / 60
+const MAX_SUB_STEPS = 10
 
-  var cameraPos = [0, 0]
-  var zoom = 50
-  var fixedDeltaTime = 1 / 60
-  var maxSubSteps = 10
-  var world
-  var characterBody
-  var rayDebugData = []
-  var player
+export default class Game {
+  constructor(canvas, state) {
+    Object.assign(this, { canvas, state })
+    this.resize()
 
-  // Collision groups
-  var SCENERY_GROUP = 0x01
-  var PLAYER_GROUP = 0x02
+    this.init()
+    this.animate = (time) => this._animate(time)
+    requestAnimationFrame(this.animate)
+  }
 
-  init()
-  requestAnimationFrame(animate)
+  resize() {
+    this.ctx = this.canvas.getContext('2d')
+  }
 
-  function init() {
+  init() {
     // Init canvas
-    ctx.lineWidth = 1 / zoom
+    Object.assign(this, {
+      cameraPos: [0, 0],
+      zoom: 50,
+      rayDebugData: [],
+    })
+
+    this.ctx.lineWidth = 1 / this.zoom
 
     // Init world
-    world = new p2.World()
+    this.world = new p2.World()
 
     // Add some scenery
-    addStaticBox(0, 0, 0, 1, 1)
-    addStaticBox(-3, 3, 0, 3, 1)
-    addStaticBox(0, -1, 0, 7, 1)
-    addStaticBox(-6, 0, Math.PI / 4, 1, 7)
-    addStaticBox(4, 6, 0, 1, 100)
-    addStaticCircle(-9, 1, 1, 2)
+    this.addStaticBox(0, 0, 1, 1)
+    this.addStaticBox(-3, 3, 3, 1)
+    this.addStaticBox(0, -1, 7, 1)
+    this.addStaticBox(-6, 0, 1, 7, Math.PI / 4)
+    this.addStaticBox(4, 6, 1, 100)
+    this.addStaticBox(0, 19, 1, 31)
+    this.addStaticCircle(-9, 1, 2, 1)
 
     // Add a character body
-    var characterShape = new p2.Box({
-      width: 8 / 16,
-      height: 2,
-      collisionGroup: PLAYER_GROUP,
-    })
-    characterBody = new p2.Body({
+    this.characterBody = new p2.Body({
       mass: 0,
       position: [0, 3],
       fixedRotation: true,
       damping: 0,
       type: p2.Body.KINEMATIC,
     })
-    characterBody.addShape(characterShape)
-    world.addBody(characterBody)
+    this.characterBody.addShape(
+      new p2.Box({
+        width: 8 / 16,
+        height: 2,
+        collisionGroup: PLAYER_GROUP,
+      }),
+    )
+    this.world.addBody(this.characterBody)
 
     // Create the character controller
-    player = new KinematicCharacterController({
-      world: world,
-      body: characterBody,
+    this.player = new KinematicCharacterController({
+      world: this.world,
+      body: this.characterBody,
       collisionMask: SCENERY_GROUP,
       velocityXSmoothing: 0.0001,
       skinWidth: 0.1,
     })
 
     // Update the character controller after each physics tick.
-    world.on('postStep', function() {
-      rayDebugData.length = 0
-      player.update(world.lastTimeStep)
+    this.world.on('postStep', () => {
+      this.rayDebugData.length = 0
+      this.player.update(this.world.lastTimeStep)
     })
 
     // Store ray debug data
-    player.on('raycast', function(evt) {
-      rayDebugData.push(evt.ray.from[0], evt.ray.from[1], evt.ray.to[0], evt.ray.to[1])
+    this.player.on('raycast', (evt) => {
+      this.rayDebugData.push([evt.ray.from[0], evt.ray.from[1], evt.ray.to[0], evt.ray.to[1]])
     })
 
     // Set up key listeners
-    var left = 0,
-      right = 0
-    window.addEventListener('keydown', function(evt) {
+    let left = 0
+    let right = 0
+    window.addEventListener('keydown', (evt) => {
       switch (evt.keyCode) {
         case 38: // up key
         case 32:
-          player.setJumpKeyState(true)
+          this.player.setJumpKeyState(true)
           break // space key
         case 39:
           right = 1
@@ -89,13 +96,13 @@ export default (canvas, state) => {
           left = 1
           break // left key
       }
-      player.input[0] = right - left
+      this.player.input[0] = right - left
     })
-    window.addEventListener('keyup', function(evt) {
+    window.addEventListener('keyup', (evt) => {
       switch (evt.keyCode) {
         case 38: // up
         case 32:
-          player.setJumpKeyState(false)
+          this.player.setJumpKeyState(false)
           break
         case 39:
           right = 0
@@ -104,128 +111,114 @@ export default (canvas, state) => {
           left = 0
           break
       }
-      player.input[0] = right - left
+      this.player.input[0] = right - left
     })
   }
 
-  function addStaticCircle(x, y, angle, radius) {
-    var shape = new p2.Circle({
-      collisionGroup: SCENERY_GROUP,
-      radius: radius,
-    })
+  addStaticCircle(x, y, radius, angle = 0) {
+    var body = new p2.Body({ position: [x, y], angle: angle })
+    body.addShape(new p2.Circle({ collisionGroup: SCENERY_GROUP, radius }))
+    this.world.addBody(body)
+  }
+
+  addStaticBox(x, y, width, height, angle = 0) {
+    var shape = new p2.Box({ collisionGroup: SCENERY_GROUP, width, height })
     var body = new p2.Body({
       position: [x, y],
       angle: angle,
     })
     body.addShape(shape)
-    world.addBody(body)
+    this.world.addBody(body)
   }
 
-  function addStaticBox(x, y, angle, width, height) {
-    var shape = new p2.Box({
-      collisionGroup: SCENERY_GROUP,
-      width: width,
-      height: height,
-    })
-    var body = new p2.Body({
-      position: [x, y],
-      angle: angle,
-    })
-    body.addShape(shape)
-    world.addBody(body)
-  }
-
-  function drawBody(body) {
+  drawBody(body) {
     var x = body.interpolatedPosition[0],
       y = body.interpolatedPosition[1],
       s = body.shapes[0]
-    ctx.save()
-    ctx.translate(x, y) // Translate to the center of the box
-    ctx.rotate(body.interpolatedAngle) // Rotate to the box body frame
+    this.ctx.save()
+    this.ctx.translate(x, y) // Translate to the center of the box
+    this.ctx.rotate(body.interpolatedAngle) // Rotate to the box body frame
 
     if (s instanceof p2.Box) {
-      ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height)
+      this.ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height)
     } else if (s instanceof p2.Circle) {
-      ctx.beginPath()
-      ctx.arc(0, 0, s.radius, 0, 2 * Math.PI)
-      ctx.fill()
-      ctx.closePath()
+      this.ctx.beginPath()
+      this.ctx.arc(0, 0, s.radius, 0, 2 * Math.PI)
+      this.ctx.fill()
+      this.ctx.closePath()
     }
 
-    ctx.restore()
+    this.ctx.restore()
   }
 
-  function drawRay(startX, startY, endX, endY) {
-    ctx.beginPath()
-    ctx.moveTo(startX, startY)
-    ctx.lineTo(endX, endY)
-    ctx.stroke()
-    ctx.closePath()
+  drawRay([startX, startY, endX, endY]) {
+    this.ctx.beginPath()
+    this.ctx.moveTo(startX, startY)
+    this.ctx.lineTo(endX, endY)
+    this.ctx.stroke()
+    this.ctx.closePath()
   }
 
-  function render() {
-    ctx.fillStyle = 'black'
-    ctx.fillRect(0, 0, w, h)
+  render() {
+    const { width, height } = this.canvas
+    this.ctx.fillStyle = 'black'
+    this.ctx.fillRect(0, 0, width, height)
 
     // Transform the canvas
     // Note that we need to flip the y axis since Canvas pixel coordinates
     // goes from top to bottom, while physics does the opposite.
-    ctx.save()
-    ctx.translate(w / 2, h / 2) // Translate to the center
-    ctx.scale(zoom, -zoom) // Zoom in and flip y axis
+    this.ctx.save()
+    this.ctx.translate(width / 2, height / 2) // Translate to the center
+    this.ctx.scale(this.zoom, -this.zoom) // Zoom in and flip y axis
 
     p2.vec2.lerp(
-      cameraPos,
-      cameraPos,
-      [-characterBody.interpolatedPosition[0], -characterBody.interpolatedPosition[1]],
+      this.cameraPos,
+      this.cameraPos,
+      [-this.characterBody.interpolatedPosition[0], -this.characterBody.interpolatedPosition[1]],
       0.05,
     )
-    ctx.translate(cameraPos[0], cameraPos[1])
+    this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
 
     // Draw all bodies
-    ctx.strokeStyle = 'none'
-    ctx.fillStyle = 'white'
-    for (var i = 0; i < world.bodies.length; i++) {
-      var body = world.bodies[i]
-      drawBody(body)
+    this.ctx.strokeStyle = 'none'
+    this.ctx.fillStyle = 'white'
+    for (var i = 0; i < this.world.bodies.length; i++) {
+      var body = this.world.bodies[i]
+      this.drawBody(body)
     }
 
-    ctx.strokeStyle = 'red'
-    for (var i = 0; i < rayDebugData.length; i += 4) {
-      drawRay(rayDebugData[i + 0], rayDebugData[i + 1], rayDebugData[i + 2], rayDebugData[i + 3])
-    }
+    this.ctx.strokeStyle = 'red'
+    this.rayDebugData.forEach((debug) => this.drawRay(debug))
 
     // Restore transform
-    ctx.restore()
+    this.ctx.restore()
   }
 
-  var lastTime
-
   // Animation loop
-  function animate(time) {
-    state.frame++
-    requestAnimationFrame(animate)
+  _animate(time) {
+    this.state.frame++
+    requestAnimationFrame(this.animate)
 
     // Compute elapsed time since last frame
-    var deltaTime = lastTime ? (time - lastTime) / 1000 : 0
+    let deltaTime = this.lastTime ? (time - this.lastTime) / 1000 : 0
     deltaTime = Math.min(1 / 10, deltaTime)
 
     // Move physics bodies forward in time
-    world.step(fixedDeltaTime, deltaTime, maxSubSteps)
+    this.world.step(fixedDeltaTime, deltaTime, MAX_SUB_STEPS)
 
     // Render scene
-    render()
+    this.render()
 
-    updateDebugLog()
+    this.updateDebugLog()
 
-    lastTime = time
+    this.lastTime = time
   }
 
-  function updateDebugLog() {
-    Object.assign(state.collisions, player.collisions)
-    const { position } = player.body
-    const { velocity, gravity } = player
-    const max_speed_y = Math.max(state.body.max_speed_y, Math.abs(velocity[1]))
-    Object.assign(state.body, { position, velocity, max_speed_y, gravity })
+  updateDebugLog() {
+    Object.assign(this.state.collisions, this.player.collisions)
+    const { position } = this.player.body
+    const { velocity, gravity } = this.player
+    const max_speed_y = Math.max(this.state.body.max_speed_y, Math.abs(velocity[1]))
+    Object.assign(this.state.body, { position, velocity, max_speed_y, gravity })
   }
 }
