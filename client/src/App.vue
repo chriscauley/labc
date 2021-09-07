@@ -5,6 +5,6 @@
 <script>
 import Game from './components/Game.vue'
 export default {
-  components: { Game }
+  components: { Game },
 }
 </script>

@@ -3,14 +3,10 @@
   <code id="debug" style="display: flex">
     <div>
       <div>frame: {{ state.frame }}</div>
-      <div v-for="line, i in state.body">
-        {{ i }}: {{ pprint(line) }}
-      </div>
+      <div v-for="(line, i) in state.body" :key="i">{{ i }}: {{ pprint(line) }}</div>
     </div>
     <div>
-      <div v-for="line, i in state.collisions">
-        {{ i }}: {{ pprint(line) }}
-      </div>
+      <div v-for="(line, i) in state.collisions" :key="i">{{ i }}: {{ pprint(line) }}</div>
     </div>
   </code>
 </template>
@@ -20,7 +16,7 @@ import game from './game'
 
 export default {
   data() {
-    return { state: {collisions: {}, body: {max_speed_y: 0}, frame: 0} }
+    return { state: { collisions: {}, body: { max_speed_y: 0 }, frame: 0 } }
   },
   mounted() {
     return game(this.$refs.canvas, this.state)
@@ -31,12 +27,15 @@ export default {
         i = [...i]
       }
       if (Array.isArray(i)) {
-        return i.slice().map(this.pprint).join(',')
+        return i
+          .slice()
+          .map(this.pprint)
+          .join(',')
       } else if (typeof i === 'number') {
         return i.toFixed(2)
       }
       return i
-    }
-  }
+    },
+  },
 }
 </script>
