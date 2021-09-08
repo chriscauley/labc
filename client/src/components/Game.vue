@@ -3,7 +3,7 @@
   <code id="debug" style="display: flex">
     <div>
       <div>frame: {{ state.frame }}</div>
-      <div v-for="(line, i) in state.body" :key="i">{{ i }}: {{ pprint(line) }}</div>
+      <div v-for="(line, i) in state.player" :key="i">{{ i }}: {{ pprint(line) }}</div>
     </div>
     <div>
       <div v-for="(line, i) in state.collisions" :key="i">{{ i }}: {{ pprint(line) }}</div>
@@ -19,7 +19,10 @@ import game from '@/game/Game'
 export default {
   mixins: [Mousetrap.Mixin],
   data() {
-    return { game: null, state: { collisions: {}, body: { max_speed_y: 0 }, frame: 0 } }
+    return {
+      game: null,
+      state: { collisions: {}, player: { max_speed_y: 0, bomb_hits: 0 }, frame: 0 },
+    }
   },
   computed: {
     mousetrap() {
