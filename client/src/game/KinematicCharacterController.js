@@ -40,6 +40,7 @@ class RaycastController extends EventEmitter {
 
     this.world = options.world
     this.body = options.body
+    this.id = options.body.id
 
     const {
       collisionMask = -1,
@@ -53,6 +54,7 @@ class RaycastController extends EventEmitter {
     this.horizontalRaySpacing = null
     this.verticalRaySpacing = null
 
+    this.lastCollisionBody = null
     this.raycastOrigins = {
       topLeft: vec2.create(),
       topRight: vec2.create(),
@@ -130,6 +132,17 @@ class Controller extends RaycastController {
         this.emit(raycastEvent)
       }
     })()
+    this.lastCollisions = {}
+    this.debounceCollision = (dxy) => {
+      // this debouncing is mostly to stop it from colliding on all of the rays
+      const now = new Date().valueOf()
+      const body = this.raycastResult.body
+      if (now - this.lastCollisions[body.id] < 1000) {
+        return
+      }
+      this.lastCollisions[body.id] = now
+      this.emit({ type: 'collide', dxy, body })
+    }
   }
 
   resetCollisions(velocity) {
@@ -162,6 +175,7 @@ class Controller extends RaycastController {
       this.descendSlope(velocity)
     }
 
+    this.collidedWith = {}
     this.horizontalCollisions(velocity)
     if (velocity[1] !== 0) {
       this.verticalCollisions(velocity, input)
@@ -225,8 +239,13 @@ class Controller extends RaycastController {
             velocity[1] = Math.tan(collisions.slopeAngle) * Math.abs(velocity[0])
           }
 
-          collisions.left = directionX === -1
-          collisions.right = directionX === 1
+          if (directionX === -1) {
+            this.debounceCollision([-1, 0])
+            collisions.left = true
+          } else if (directionX === 1) {
+            this.debounceCollision([1, 0])
+            collisions.right = true
+          }
         }
       }
 
@@ -276,8 +295,13 @@ class Controller extends RaycastController {
           velocity[0] = (velocity[1] / Math.tan(collisions.slopeAngle)) * sign(velocity[0])
         }
 
-        collisions.below = directionY === -1
-        collisions.above = directionY === 1
+        if (directionY === -1) {
+          this.debounceCollision([0, -1])
+          collisions.below = true
+        } else if (directionY === 1) {
+          this.debounceCollision([0, 1])
+          collisions.above = true
+        }
       }
 
       this.raycastResult.reset()

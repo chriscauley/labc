@@ -26,8 +26,8 @@ export default {
       if (!this.game) {
         return {}
       }
-      const { up, left, right } = this.game.actions
-      return { 'up,space': up, left, right }
+      const { up, left, right, shoot } = this.game.actions
+      return { up, left, right, space: shoot }
     },
   },
   mounted() {

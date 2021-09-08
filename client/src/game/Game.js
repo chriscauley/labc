@@ -2,10 +2,68 @@ import p2 from 'p2'
 import KinematicCharacterController from './KinematicCharacterController'
 
 // Collision groups
-const SCENERY_GROUP = 0x01
-const PLAYER_GROUP = 0x02
+const SCENERY_GROUP = 1
+const PLAYER_GROUP = 2
+const BULLET_GROUP = 4
 const fixedDeltaTime = 1 / 60
 const MAX_SUB_STEPS = 10
+const DIRECTIONS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+]
+window.p2 = p2
+
+const { Ray, RaycastResult, vec2 } = p2
+
+class Bomb {
+  constructor({ game, player }) {
+    Object.assign(this, { game, player })
+    this.type = 'bomb'
+    this.makeShape()
+    const [x, y] = this.body.position
+    this.xy = [Math.floor(x), Math.floor(y)]
+    setTimeout(() => this.detonate(), 1000)
+  }
+  detonate() {
+    const { position } = this.body
+    const ray = new Ray({
+      mode: Ray.ALL,
+      from: position,
+      callback: (result) => {
+        result.body &&
+          this.game.world.emit({
+            body: result.body,
+            player_id: this.game.player.id,
+            type: 'bomb-damage',
+          })
+      },
+    })
+    const result = new RaycastResult()
+    ray.collisionMask = SCENERY_GROUP
+    DIRECTIONS.forEach((dxy) => {
+      result.reset()
+      ray.to = [ray.from[0] + dxy[0] * 0.5, ray.from[1] + dxy[1] * 0.5]
+      ray.update()
+      this.game.world.raycast(result, ray)
+    })
+    this.game.world.removeBody(this.body)
+    delete this.game.entities[this.id]
+  }
+  makeShape() {
+    const position = vec2.copy([0, 0], this.game.player.body.position)
+    this.body = new p2.Body({
+      position,
+      gravityScale: 0,
+      collisionGroup: BULLET_GROUP,
+    })
+    this.body.addShape(new p2.Circle({ radius: 0.1, collisionGroup: BULLET_GROUP }))
+    this.game.world.addBody(this.body)
+    this.id = this.body.id
+    this.game.entities[this.id] = this
+  }
+}
 
 export default class Game {
   constructor(canvas, state) {
@@ -15,6 +73,7 @@ export default class Game {
     this.init()
     this.animate = (time) => this._animate(time)
     requestAnimationFrame(this.animate)
+    this.entities = {}
   }
 
   resize() {
@@ -27,13 +86,15 @@ export default class Game {
       cameraPos: [0, 0],
       zoom: 50,
       rayDebugData: [],
-      keys: { left: 0, right: 0 },
+      keys: { left: 0, right: 0, up: 0, down: 0 },
     })
 
     this.ctx.lineWidth = 1 / this.zoom
 
     // Init world
     this.world = new p2.World()
+    window.urGame = this
+    // this.world.on('impact', (e) => console.log(e)) // non-player collisions
 
     // Add some scenery
     this.addStaticBox(0, 0, 1, 1)
@@ -81,11 +142,25 @@ export default class Game {
       this.rayDebugData.push([ray.from[0], ray.from[1], ray.to[0], ray.to[1]])
     })
 
+    this.player.on('collide', (_result) => {
+      // console.log(_result)
+    })
+
+    this.world.on('bomb-damage', (_result) => {
+      // console.log(_result)
+    })
+
     // Set up key listeners
     this.actions = {
       up: {
-        keydown: () => this.player.setJumpKeyState(true),
-        keyup: () => this.player.setJumpKeyState(false),
+        keydown: () => {
+          this.player.setJumpKeyState(true)
+          this.setKeys({ up: 1 })
+        },
+        keyup: () => {
+          this.player.setJumpKeyState(false)
+          this.setKeys({ up: 0 })
+        },
       },
       left: {
         keydown: () => this.setKeys({ left: 1 }),
@@ -94,6 +169,9 @@ export default class Game {
       right: {
         keydown: () => this.setKeys({ right: 1 }),
         keyup: () => this.setKeys({ right: 0 }),
+      },
+      shoot: {
+        keydown: () => this.shoot(),
       },
     }
   }
@@ -107,6 +185,23 @@ export default class Game {
     this.player.input[0] = this.keys.right - this.keys.left
   }
 
+  shoot() {
+    const position = vec2.copy([0, 0], this.player.body.position)
+    if (false) {
+      // shoot bullet
+      const velocity = [5, 0]
+      const bulletBody = new p2.Body({ mass: 0.05, position, velocity, gravityScale: 0 })
+      const bulletShape = new p2.Circle({ radius: 0.2 })
+      bulletBody.addShape(bulletShape)
+      bulletShape.collisionGroup = BULLET_GROUP
+      bulletShape.collisionMask = SCENERY_GROUP
+      this.world.addBody(bulletBody)
+    } else {
+      // shoot bomb
+      new Bomb({ game: this, player: this.player })
+    }
+  }
+
   addStaticCircle(x, y, radius, angle = 0) {
     var body = new p2.Body({ position: [x, y], angle: angle })
     body.addShape(new p2.Circle({ collisionGroup: SCENERY_GROUP, radius }))
@@ -114,7 +209,8 @@ export default class Game {
   }
 
   addStaticBox(x, y, width, height, angle = 0) {
-    var shape = new p2.Box({ collisionGroup: SCENERY_GROUP, width, height })
+    const collisionMask = PLAYER_GROUP | BULLET_GROUP
+    var shape = new p2.Box({ collisionGroup: SCENERY_GROUP, collisionMask, width, height })
     var body = new p2.Body({
       position: [x, y],
       angle: angle,
@@ -163,7 +259,7 @@ export default class Game {
     this.ctx.translate(width / 2, height / 2) // Translate to the center
     this.ctx.scale(this.zoom, -this.zoom) // Zoom in and flip y axis
 
-    p2.vec2.lerp(
+    vec2.lerp(
       this.cameraPos,
       this.cameraPos,
       [-this.characterBody.interpolatedPosition[0], -this.characterBody.interpolatedPosition[1]],
