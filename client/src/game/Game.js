@@ -52,27 +52,9 @@ export default class Game {
     this.addStaticBox(0, 5, 1, 1)
     this.addStaticCircle(-9, 1, 2, 1)
 
-    // Add a character body
-    this.characterBody = new p2.Body({
-      mass: 0,
-      position: [0, 3],
-      fixedRotation: true,
-      damping: 0,
-      type: p2.Body.KINEMATIC,
-    })
-    this.characterBody.addShape(
-      new p2.Box({
-        width: 8 / 16,
-        height: 2,
-        collisionGroup: PLAYER_GROUP,
-      }),
-    )
-    this.world.addBody(this.characterBody)
-
     // Create the character controller
     this.player = new Player({
       world: this.world,
-      body: this.characterBody,
       collisionMask: SCENERY_GROUP,
       velocityXSmoothing: 0.0001,
       skinWidth: 0.1,
@@ -206,11 +188,12 @@ export default class Game {
     this.ctx.save()
     this.ctx.translate(width / 2, height / 2) // Translate to the center
     this.ctx.scale(this.zoom, -this.zoom) // Zoom in and flip y axis
+    const { body } = this.player
 
     vec2.lerp(
       this.cameraPos,
       this.cameraPos,
-      [-this.characterBody.interpolatedPosition[0], -this.characterBody.interpolatedPosition[1]],
+      [-body.interpolatedPosition[0], -body.interpolatedPosition[1]],
       0.05,
     )
     this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
@@ -218,10 +201,7 @@ export default class Game {
     // Draw all bodies
     this.ctx.strokeStyle = 'none'
     this.ctx.fillStyle = 'white'
-    for (var i = 0; i < this.world.bodies.length; i++) {
-      var body = this.world.bodies[i]
-      this.drawBody(body)
-    }
+    this.world.bodies.forEach((body) => this.drawBody(body))
 
     this.ctx.strokeStyle = 'red'
     this.rayDebugData.forEach((debug) => this.drawRay(debug))

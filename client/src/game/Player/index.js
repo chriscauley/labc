@@ -3,6 +3,7 @@
 import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
+import { PLAYER_GROUP } from '../constants'
 
 window.p2 = p2
 
@@ -13,8 +14,24 @@ function lerp(factor, start, end) {
   return start + (end - start) * factor
 }
 
-export default class KinematicCharacterController extends Controller {
+export default class Player extends Controller {
   constructor(options = {}) {
+    options.body = new p2.Body({
+      mass: 0,
+      position: [0, 3],
+      fixedRotation: true,
+      damping: 0,
+      type: p2.Body.KINEMATIC,
+    })
+    options.body.addShape(
+      new p2.Box({
+        width: 8 / 16,
+        height: 2,
+        collisionGroup: PLAYER_GROUP,
+      }),
+    )
+    options.world.addBody(options.body)
+
     super(options)
 
     this.input = vec2.create()
