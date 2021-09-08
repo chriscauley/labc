@@ -1,5 +1,6 @@
 import p2 from 'p2'
-import KinematicCharacterController from './KinematicCharacterController'
+
+import Player from './Player'
 import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP } from './constants'
 import Bomb from './bullet/Bomb'
 
@@ -69,7 +70,7 @@ export default class Game {
     this.world.addBody(this.characterBody)
 
     // Create the character controller
-    this.player = new KinematicCharacterController({
+    this.player = new Player({
       world: this.world,
       body: this.characterBody,
       collisionMask: SCENERY_GROUP,
