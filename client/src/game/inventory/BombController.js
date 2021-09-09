@@ -2,7 +2,7 @@ import p2 from 'p2'
 import { SCENERY_GROUP, BULLET_GROUP, DIRECTIONS } from '../constants'
 
 const { Ray, RaycastResult, vec2 } = p2
-const BOMB_DISTANCE = 0.75
+const BLAST_RADIUS = 0.75
 const RADIUS = 0.1
 
 class Bomb {
@@ -37,13 +37,26 @@ class Bomb {
     ray.collisionMask = SCENERY_GROUP
     DIRECTIONS.forEach((dxy) => {
       result.reset()
-      ray.to = [ray.from[0] + dxy[0] * BOMB_DISTANCE, ray.from[1] + dxy[1] * BOMB_DISTANCE]
+      ray.to = [ray.from[0] + dxy[0] * BLAST_RADIUS, ray.from[1] + dxy[1] * BLAST_RADIUS]
       ray.update()
       this.player.world.raycast(result, ray)
     })
+    this.blastPlayer(this.player) // should this target other players?
     this.player.game.removeEntity(this)
     this.detonated = true
   }
+
+  blastPlayer(player) {
+    const distance = vec2.distance(player.body.position, this.body.position)
+    if (distance > BLAST_RADIUS) {
+      return
+    }
+    const dxy = vec2.subtract([0, 0], player.body.position, this.body.position)
+    dxy[1] += 0.5
+    const blast_velocity = dxy.map((i) => (Math.abs(i) < BLAST_RADIUS ? Math.sign(i) : 0))
+    vec2.add(player._blast_velocity, player._blast_velocity, blast_velocity)
+  }
+
   makeShape() {
     const position = vec2.copy([0, 0], this.player.body.position)
     this.body = new p2.Body({
@@ -56,6 +69,7 @@ class Bomb {
     this.player.game.addEntity(this)
     this.body._entity = this
   }
+
   draw(ctx) {
     const dt = this.detonate_at - this.player.world.time
     let colors = ['white', 'red']

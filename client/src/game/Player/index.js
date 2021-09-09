@@ -100,6 +100,7 @@ export default class Player extends Controller {
     this.timeToWallUnstick = 0
     this._requestJump = false
     this._requestUnJump = false
+    this._blast_velocity = [0, 0]
 
     this.keys = {
       left: 0,
@@ -236,6 +237,19 @@ export default class Player extends Controller {
         velocity[1] = this.minJumpVelocity
       }
     }
+
+    this._blast_velocity.forEach((blast_count, i) => {
+      if (blast_count) {
+        const sign = Math.sign(blast_count)
+        blast_count = Math.min(Math.abs(blast_count), 2) // cannot be moved up more than 2 squares
+        const new_v = sign * Math.sqrt((blast_count + 0.2) * -2 * this.gravity)
+        const old_v = velocity[i]
+        if (Math.sign(old_v) !== Math.sign(new_v) || Math.abs(new_v) > Math.abs(old_v)) {
+          velocity[i] = new_v
+        }
+      }
+    })
+    this._blast_velocity = [0, 0]
 
     velocity[1] += this.gravity * deltaTime
     vec2.scale(this.scaledVelocity, velocity, deltaTime)
