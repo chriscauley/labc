@@ -181,7 +181,7 @@ export default class Player extends Controller {
     }
 
     const wallDirX = collisions.left ? -1 : 1
-    const targetVelocityX = input[0] * this.moveSpeed
+    const targetVelocityX = input[0] * this.moveSpeed // TODO issue #1
 
     let smoothing = this.velocityXSmoothing
     smoothing *= collisions.below ? this.accelerationTimeGrounded : this.accelerationTimeAirborne
@@ -240,8 +240,14 @@ export default class Player extends Controller {
 
     this._blast_velocity.forEach((blast_count, i) => {
       if (blast_count) {
+        this._last_blast = this.world.time
         const sign = Math.sign(blast_count)
         blast_count = Math.min(Math.abs(blast_count), 2) // cannot be moved up more than 2 squares
+        if (i === 0) {
+          // TODO issue #1
+          // because it's trying to match the arrows for motion, x blasts get super damped out
+          blast_count *= 2
+        }
         const new_v = sign * Math.sqrt((blast_count + 0.2) * -2 * this.gravity)
         const old_v = velocity[i]
         if (Math.sign(old_v) !== Math.sign(new_v) || Math.abs(new_v) > Math.abs(old_v)) {

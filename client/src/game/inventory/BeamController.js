@@ -18,7 +18,7 @@ export default class BeamController {
       y_dir = -1
     }
     const velocity = [faceDir * 5, y_dir * 5]
-    const bulletBody = new Body({ mass: 0.05, position, velocity, gravityScale: 0, damping: 0 })
+    const bulletBody = new Body({ mass: 0.05, position, velocity, gravityScale: 0, damping: 0, collisionResponse: false })
     const bulletShape = new Circle({ radius: 0.2 })
     bulletBody.addShape(bulletShape)
     bulletShape.collisionGroup = BULLET_GROUP

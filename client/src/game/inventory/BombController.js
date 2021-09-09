@@ -47,12 +47,14 @@ class Bomb {
   }
 
   blastPlayer(player) {
+    // Add +/- charges to the users "blast_velocity"
+    // Any pixel to the left or right sends the user in that direction
     const distance = vec2.distance(player.body.position, this.body.position)
     if (distance > BLAST_RADIUS) {
       return
     }
     const dxy = vec2.subtract([0, 0], player.body.position, this.body.position)
-    dxy[1] += 0.5
+    dxy[1] += 0.5 // bias vertical blasting to blast upwards
     const blast_velocity = dxy.map((i) => (Math.abs(i) < BLAST_RADIUS ? Math.sign(i) : 0))
     vec2.add(player._blast_velocity, player._blast_velocity, blast_velocity)
   }
