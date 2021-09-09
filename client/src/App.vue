@@ -1,10 +1,9 @@
 <template>
-  <div><game /></div>
+  <div>
+    <router-view />
+  </div>
 </template>
 
 <script>
-import Game from './components/Game.vue'
-export default {
-  components: { Game },
-}
+export default {}
 </script>

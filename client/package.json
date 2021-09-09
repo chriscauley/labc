@@ -8,12 +8,16 @@
     "lint": "eslint \"src/**/*\""
   },
   "dependencies": {
+    "@popperjs/core": "^2.10.1",
     "@unrest/eslint-config": "^0.0.5",
+    "@unrest/vue": "^0.2.0",
     "@unrest/vue-mousetrap": "^0.0.6",
+    "@unrest/vue-storage": "^0.0.9",
     "core-js": "^3.6.5",
     "lodash": "^4.17.21",
     "p2": "^0.7.1",
-    "vue": "^3.0.0"
+    "vue": "^3.0.0",
+    "vue-router": "^4.0.0-beta.13"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
