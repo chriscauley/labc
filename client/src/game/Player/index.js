@@ -148,7 +148,7 @@ export default class Player extends Controller {
   }
 
   updatePointing() {
-    const { up, down, aimup, aimdown } = this.keys
+    const { up, down, aimup, aimdown, right, left } = this.keys
     if (aimup && aimdown) {
       this.state.pointing = 'zenith'
     } else if (aimup) {
@@ -156,7 +156,7 @@ export default class Player extends Controller {
     } else if (aimdown) {
       this.state.pointing = 'downward'
     } else if (up) {
-      this.state.pointing = 'upward'
+      this.state.pointing = right ^ left ? 'upward' : 'zenith'
     } else if (down) {
       this.state.pointing = 'downward'
     } else {

@@ -3,11 +3,11 @@ import { SCENERY_GROUP, BULLET_GROUP, DIRECTIONS } from '../constants'
 
 const { Ray, RaycastResult, vec2 } = p2
 const BOMB_DISTANCE = 0.75
+const RADIUS = 0.1
 
 class Bomb {
   constructor({ player }) {
     this.player = player
-    this.radius = 0.1
     this.type = 'bomb'
     this.makeShape()
     const [x, y] = this.player.body.position
@@ -51,7 +51,7 @@ class Bomb {
       gravityScale: 0,
       collisionGroup: BULLET_GROUP,
     })
-    this.body.addShape(new p2.Circle({ radius: this.radius, collisionGroup: BULLET_GROUP }))
+    this.body.addShape(new p2.Circle({ radius: RADIUS, collisionGroup: BULLET_GROUP }))
     this.id = this.body.id
     this.player.game.addEntity(this)
     this.body._entity = this
@@ -68,7 +68,7 @@ class Bomb {
     ;[ctx.fillStyle, ctx.strokeStyle] = colors
     ctx.lineWidth = 0.05
     ctx.beginPath()
-    ctx.arc(0, 0, this.radius, 0, 2 * Math.PI)
+    ctx.arc(0, 0, RADIUS, 0, 2 * Math.PI)
     ctx.stroke()
     ctx.fill()
     ctx.closePath()
@@ -96,9 +96,21 @@ export default class BombController {
   press() {
     const { player } = this
     const bomb = new Bomb({ player })
+    const target_bomb = this.bombs.find(
+      (b) => vec2.distance(b.body.position, bomb.body.position) < 2 * RADIUS,
+    )
+
+    if (target_bomb) {
+      // pauli exclusion principle
+      bomb.detonate()
+      target_bomb.detonate()
+      this.bombs = this.bombs.filter((bomb) => !bomb.detonated)
+      return
+    }
+
     this.bombs.push(bomb)
     if (this.player.tech.bomb_triggered) {
-      bomb.detonate_at += 24 * 60 * 60
+      bomb.detonate_at += Infinity
     }
     if (this.player.tech.bomb_linked) {
       this.bombs.forEach((b) => (b.detonate_at = bomb.detonate_at))
@@ -106,11 +118,13 @@ export default class BombController {
   }
   release() {
     const last_bomb = this.bombs[this.bombs.length - 1]
-    if (this.player.tech.bomb_triggered) {
-      last_bomb.detonate_at = this.player.world.time + 1
-    }
-    if (this.player.tech.bomb_linked) {
-      this.bombs.forEach((b) => (b.detonate_at = last_bomb.detonate_at))
+    if (last_bomb) {
+      if (this.player.tech.bomb_triggered) {
+        last_bomb.detonate_at = this.player.world.time + 1
+      }
+      if (this.player.tech.bomb_linked) {
+        this.bombs.forEach((b) => (b.detonate_at = last_bomb.detonate_at))
+      }
     }
   }
 }
