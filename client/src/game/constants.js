@@ -8,3 +8,16 @@ export const DIRECTIONS = [
   [0, 1],
   [0, -1],
 ]
+
+export const PLAYER_ACTIONS = [
+  'up',
+  'down',
+  'left',
+  'right',
+  'shoot1',
+  'shoot2',
+  'jump',
+  'run',
+  'aimup',
+  'aimdown',
+]

@@ -3,7 +3,8 @@
 import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
-import { PLAYER_GROUP } from '../constants'
+import { PLAYER_GROUP, SCENERY_GROUP, BULLET_GROUP } from '../constants'
+import Bomb from '../bullet/Bomb'
 
 window.p2 = p2
 
@@ -17,6 +18,11 @@ function lerp(factor, start, end) {
 export default class Player extends Controller {
   constructor(options = {}) {
     const { start = [0, 0] } = options
+    Object.assign(options, {
+      collisionMask: SCENERY_GROUP,
+      velocityXSmoothing: 0.0001,
+      skinWidth: 0.1,
+    })
     options.body = new p2.Body({
       mass: 0,
       position: start,
@@ -34,6 +40,7 @@ export default class Player extends Controller {
     options.world.addBody(options.body)
 
     super(options)
+    this.game = options.game
 
     this.input = vec2.create()
     const {
@@ -79,18 +86,58 @@ export default class Player extends Controller {
     this.timeToWallUnstick = 0
     this._requestJump = false
     this._requestUnJump = false
+
+    this.bombs = []
+    this.keys = {
+      left: 0,
+      right: 0,
+      up: 0,
+      down: 0,
+      shoot: 0,
+      shoot2: 0,
+      jump: 0,
+      run: 0,
+      aim_up: 0,
+      aim_down: 0,
+    }
   }
 
-  setJumpKeyState(isDown) {
-    if (isDown) {
+  press(key) {
+    this.keys[key] = 1
+    if (key === 'jump') {
       this._requestJump = true
-    } else {
+    } else if (key === 'shoot1') {
+      this.shoot()
+    }
+  }
+
+  release(key) {
+    this.keys[key] = 0
+    if (key === 'jump') {
       this._requestUnJump = true
     }
   }
 
+  shoot() {
+    const position = vec2.copy([0, 0], this.body.position)
+    if (false) {
+      // shoot bullet
+      const velocity = [5, 0]
+      const bulletBody = new p2.Body({ mass: 0.05, position, velocity, gravityScale: 0 })
+      const bulletShape = new p2.Circle({ radius: 0.2 })
+      bulletBody.addShape(bulletShape)
+      bulletShape.collisionGroup = BULLET_GROUP
+      bulletShape.collisionMask = SCENERY_GROUP
+      this.world.addBody(bulletBody)
+    } else {
+      // shoot bomb
+      new Bomb({ game: this.game, player: this })
+    }
+  }
+
   update(deltaTime) {
-    const { collisions, velocity, input } = this
+    const { collisions, velocity, keys } = this
+    const input = [(keys.right ? 1 : 0) - (keys.left ? 1 : 0), 0]
     if (this.terminalVelocity && velocity[1] < this.terminalVelocity) {
       // deltaTime was spent falling faster than terminalVelocity
       this.body.position[1] += deltaTime * this.terminalVelocity - deltaTime * velocity[1]

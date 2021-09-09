@@ -8,6 +8,9 @@
     <div>
       <div v-for="(line, i) in state.collisions" :key="i">{{ i }}: {{ pprint(line) }}</div>
     </div>
+    <div>
+      <div v-for="(line, i) in state.keys" :key="i">{{ i }}: {{ pprint(line) }}</div>
+    </div>
   </code>
 </template>
 
@@ -21,7 +24,7 @@ export default {
   data() {
     return {
       game: null,
-      state: { collisions: {}, player: { max_speed_y: 0, bomb_hits: 0 }, frame: 0 },
+      state: { collisions: {}, keys: {}, player: { max_speed_y: 0, bomb_hits: 0 }, frame: 0 },
     }
   },
   computed: {
@@ -29,8 +32,8 @@ export default {
       if (!this.game) {
         return {}
       }
-      const { up, left, right, shoot } = this.game.actions
-      return { up, left, right, space: shoot }
+      const { up, left, right, shoot1, jump } = this.game.actions
+      return { up, left, right, z: shoot1, x: jump }
     },
   },
   mounted() {

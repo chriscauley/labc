@@ -13,14 +13,15 @@ export default class Bomb {
     const [x, y] = this.body.position
     this.xy = [Math.floor(x), Math.floor(y)]
     this.created = this.game.world.time
+    this.detonate_at = this.game.world.time + 1
     this.game.world.on('preSolve', this.tick)
   }
   tick = () => {
-    const dt = this.game.world.time - this.created
-    if (dt > 0.8) {
-      this.flash = dt < 0.9
+    const dt = this.detonate_at - this.game.world.time
+    if (dt < 0.3) {
+      this.flash = dt > 0.15
     }
-    if (dt > 1) {
+    if (dt <= 0) {
       this.detonate()
       this.game.world.off('preSolve', this.tick)
     }
@@ -35,7 +36,7 @@ export default class Bomb {
           this.game.world.emit({
             damage: {
               type: 'bomb',
-              player_id: this.game.player.id,
+              player_id: this.player.id,
               amount: 1,
               body_id: result.body.id,
             },

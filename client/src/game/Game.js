@@ -1,7 +1,7 @@
 import p2 from 'p2'
 
 import Player from './Player'
-import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP } from './constants'
+import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP, PLAYER_ACTIONS } from './constants'
 import Bomb from './bullet/Bomb'
 import Brick from './Brick'
 
@@ -14,14 +14,17 @@ window.p2 = p2
 const { vec2 } = p2
 
 const BRICKS = `
-0    0
-0    0
-0    0
-0 S  0
-011110
-011110
-011110
-000000`
+0                  0
+0                  0
+0                  0
+0         S        0
+01111111111111111110
+01111111111111111110
+01111111111111111110
+01111111111111111110
+01111111111111111110
+01111111111111111110
+00000000000000000000`
 
 export default class Game {
   constructor(canvas, state) {
@@ -43,7 +46,6 @@ export default class Game {
       cameraPos: [0, 0],
       zoom: 50,
       rayDebugData: [],
-      keys: { left: 0, right: 0, up: 0, down: 0 },
       entities: {},
     })
 
@@ -73,13 +75,7 @@ export default class Game {
       )
 
     // Create the character controller
-    this.player = new Player({
-      world: this.world,
-      collisionMask: SCENERY_GROUP,
-      velocityXSmoothing: 0.0001,
-      skinWidth: 0.1,
-      start,
-    })
+    this.player = new Player({ game: this, world: this.world, start })
 
     // Update the character controller after each physics tick.
     this.world.on('postStep', () => {
@@ -104,38 +100,18 @@ export default class Game {
     })
 
     // Set up key listeners
-    this.actions = {
-      up: {
-        keydown: () => {
-          this.player.setJumpKeyState(true)
-          this.setKeys({ up: 1 })
-        },
-        keyup: () => {
-          this.player.setJumpKeyState(false)
-          this.setKeys({ up: 0 })
-        },
-      },
-      left: {
-        keydown: () => this.setKeys({ left: 1 }),
-        keyup: () => this.setKeys({ left: 0 }),
-      },
-      right: {
-        keydown: () => this.setKeys({ right: 1 }),
-        keyup: () => this.setKeys({ right: 0 }),
-      },
-      shoot: {
-        keydown: () => this.shoot(),
-      },
-    }
+    this.actions = {}
+    PLAYER_ACTIONS.forEach(
+      (a) =>
+        (this.actions[a] = {
+          keydown: () => this.player.press(a),
+          keyup: () => this.player.release(a),
+        }),
+    )
   }
 
   close() {
     cancelAnimationFrame(this._frame)
-  }
-
-  setKeys(keys) {
-    Object.assign(this.keys, keys)
-    this.player.input[0] = this.keys.right - this.keys.left
   }
 
   shoot() {
@@ -173,6 +149,7 @@ export default class Game {
   }
 
   drawBody(body) {
+    this.ctx.lineWidth = 0
     this.ctx.strokeStyle = 'none'
     this.ctx.fillStyle = 'white'
     const [x, y] = body.interpolatedPosition
@@ -258,9 +235,10 @@ export default class Game {
   updateDebugLog() {
     Object.assign(this.state.collisions, this.player.collisions)
     const { position } = this.player.body
-    const { velocity, gravity } = this.player
+    const { velocity, gravity, scaledVelocity } = this.player
     const max_speed_y = Math.max(this.state.player.max_speed_y, Math.abs(velocity[1]))
-    Object.assign(this.state.player, { position, velocity, max_speed_y, gravity })
+    Object.assign(this.state.player, { position, velocity, scaledVelocity, max_speed_y, gravity })
+    Object.assign(this.state.keys, this.player.keys)
   }
   addEntity(entity) {
     this.entities[entity.id] = entity
