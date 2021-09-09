@@ -217,10 +217,11 @@ export default class Game {
   updateDebugLog() {
     Object.assign(this.state.collisions, this.player.collisions)
     const { position } = this.player.body
-    const { velocity, gravity, scaledVelocity } = this.player
+    const { velocity, gravity, scaledVelocity, state } = this.player
     const max_speed_y = Math.max(this.state.player.max_speed_y, Math.abs(velocity[1]))
     Object.assign(this.state.player, { position, velocity, scaledVelocity, max_speed_y, gravity })
     Object.assign(this.state.keys, this.player.keys)
+    Object.assign(this.state.state, state)
   }
   addEntity(entity) {
     this.entities[entity.id] = entity

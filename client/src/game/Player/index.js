@@ -3,8 +3,8 @@
 import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
-import { PLAYER_GROUP, SCENERY_GROUP, BULLET_GROUP } from '../constants'
-import BombController from '../inventory/BombController'
+import { PLAYER_GROUP, SCENERY_GROUP } from '../constants'
+import inventory from '../inventory'
 
 window.p2 = p2
 
@@ -43,11 +43,17 @@ export default class Player extends Controller {
     this.game = options.game
 
     this.input = vec2.create()
+    this.state = {
+      ball: true,
+      health: 0, // will be healed after this.tech is set
+    }
     this.inventory = {
-      bomb: new BombController({ player: this, game: this.game }),
+      bomb: new inventory.BombController({ player: this }),
+      beam: new inventory.BeamController({ player: this }),
     }
     this.loadout = {
-      shoot1: this.inventory.bomb,
+      shoot1: this.inventory.beam,
+      bomb: this.inventory.bomb,
     }
     const {
       accelerationTimeAirborne = 0.2,
@@ -59,7 +65,7 @@ export default class Player extends Controller {
       wallLeap = [20, 20], // holding away from wall
       wallJumpOff = [20, 20], // holding neither
       timeToJumpApex = 0.4,
-      tech = { bomb_linked: true, bomb_triggered: true },
+      tech = { bomb_linked: true, bomb_triggered: true, e_tanks: 0 },
       maxJumpHeight = 4,
       minJumpHeight = 1,
       velocityXSmoothing = 0.2,
@@ -104,9 +110,15 @@ export default class Player extends Controller {
       shoot2: 0,
       jump: 0,
       run: 0,
-      aim_up: 0,
-      aim_down: 0,
+      aimup: 0,
+      aimdown: 0,
     }
+    this.heal(Infinity)
+  }
+
+  heal(amount) {
+    this.state.health += amount
+    this.state.health = Math.min(this.state.health, 99 + 100 * this.tech.e_tanks)
   }
 
   press(key) {
@@ -114,8 +126,12 @@ export default class Player extends Controller {
     if (key === 'jump') {
       this._requestJump = true
     } else if (key === 'shoot1') {
-      this.loadout.shoot1?.press()
+      const slot = this.state.ball ? 'bomb' : 'shoot1'
+      this.loadout[slot]?.press()
+    } else if (key === 'shoot2') {
+      this.loadout.shoot2?.press()
     }
+    this.updatePointing()
   }
 
   release(key) {
@@ -123,23 +139,28 @@ export default class Player extends Controller {
     if (key === 'jump') {
       this._requestUnJump = true
     } else if (key === 'shoot1') {
-      this.loadout.shoot1?.release()
+      const slot = this.state.ball ? 'bomb' : 'shoot1'
+      this.loadout[slot]?.release()
+    } else if (key === 'shoot2') {
+      this.loadout.shoot2?.release()
     }
+    this.updatePointing()
   }
 
-  shoot() {
-    const position = vec2.copy([0, 0], this.body.position)
-    if (false) {
-      // shoot bullet
-      const velocity = [5, 0]
-      const bulletBody = new p2.Body({ mass: 0.05, position, velocity, gravityScale: 0 })
-      const bulletShape = new p2.Circle({ radius: 0.2 })
-      bulletBody.addShape(bulletShape)
-      bulletShape.collisionGroup = BULLET_GROUP
-      bulletShape.collisionMask = SCENERY_GROUP
-      this.world.addBody(bulletBody)
+  updatePointing() {
+    const { up, down, aimup, aimdown } = this.keys
+    if (aimup && aimdown) {
+      this.state.pointing = 'zenith'
+    } else if (aimup) {
+      this.state.pointing = 'upward'
+    } else if (aimdown) {
+      this.state.pointing = 'downward'
+    } else if (up) {
+      this.state.pointing = 'upward'
+    } else if (down) {
+      this.state.pointing = 'downward'
     } else {
-      // shoot bomb
+      this.state.pointing = null
     }
   }
 

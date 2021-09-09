@@ -5,15 +5,15 @@ const { Ray, RaycastResult, vec2 } = p2
 const BOMB_DISTANCE = 0.75
 
 class Bomb {
-  constructor({ game, player }) {
-    Object.assign(this, { game, player })
+  constructor({ player }) {
+    this.player = player
     this.radius = 0.1
     this.type = 'bomb'
     this.makeShape()
-    const [x, y] = this.body.position
+    const [x, y] = this.player.body.position
     this.xy = [Math.floor(x), Math.floor(y)]
-    this.created = this.game.world.time
-    this.detonate_at = this.game.world.time + 1
+    this.created = this.player.world.time
+    this.detonate_at = this.player.world.time + 1
   }
   detonate() {
     const { position } = this.body
@@ -22,7 +22,7 @@ class Bomb {
       from: position,
       callback: (result) => {
         result.body &&
-          this.game.world.emit({
+          this.player.world.emit({
             damage: {
               type: 'bomb',
               player_id: this.player.id,
@@ -39,13 +39,13 @@ class Bomb {
       result.reset()
       ray.to = [ray.from[0] + dxy[0] * BOMB_DISTANCE, ray.from[1] + dxy[1] * BOMB_DISTANCE]
       ray.update()
-      this.game.world.raycast(result, ray)
+      this.player.world.raycast(result, ray)
     })
-    this.game.removeEntity(this)
+    this.player.game.removeEntity(this)
     this.detonated = true
   }
   makeShape() {
-    const position = vec2.copy([0, 0], this.game.player.body.position)
+    const position = vec2.copy([0, 0], this.player.body.position)
     this.body = new p2.Body({
       position,
       gravityScale: 0,
@@ -53,11 +53,11 @@ class Bomb {
     })
     this.body.addShape(new p2.Circle({ radius: this.radius, collisionGroup: BULLET_GROUP }))
     this.id = this.body.id
-    this.game.addEntity(this)
+    this.player.game.addEntity(this)
     this.body._entity = this
   }
   draw(ctx) {
-    const dt = this.detonate_at - this.game.world.time
+    const dt = this.detonate_at - this.player.world.time
     let colors = ['white', 'red']
     if (dt > 1) {
       colors = ['gray', 'white']
@@ -76,14 +76,14 @@ class Bomb {
 }
 
 export default class BombController {
-  constructor({ game, player }) {
-    Object.assign(this, { game, player })
+  constructor({ player }) {
+    Object.assign(this, { player })
     this.bombs = []
-    this.game.world.on('preSolve', this.tick)
+    this.player.world.on('preSolve', this.tick)
   }
   tick = () => {
     this.bombs.forEach((bomb) => {
-      const dt = bomb.detonate_at - bomb.game.world.time
+      const dt = bomb.detonate_at - this.player.world.time
       if (dt < 0.3) {
         bomb.flash = dt > 0.15
       }
@@ -94,8 +94,8 @@ export default class BombController {
     this.bombs = this.bombs.filter((bomb) => !bomb.detonated)
   }
   press() {
-    const { player, game } = this
-    const bomb = new Bomb({ player, game })
+    const { player } = this
+    const bomb = new Bomb({ player })
     this.bombs.push(bomb)
     if (this.player.tech.bomb_triggered) {
       bomb.detonate_at += 24 * 60 * 60
@@ -107,7 +107,7 @@ export default class BombController {
   release() {
     const last_bomb = this.bombs[this.bombs.length - 1]
     if (this.player.tech.bomb_triggered) {
-      last_bomb.detonate_at = this.game.world.time + 1
+      last_bomb.detonate_at = this.player.world.time + 1
     }
     if (this.player.tech.bomb_linked) {
       this.bombs.forEach((b) => (b.detonate_at = last_bomb.detonate_at))
