@@ -7,11 +7,23 @@ const BOMB_DISTANCE = 0.75
 export default class Bomb {
   constructor({ game, player }) {
     Object.assign(this, { game, player })
+    this.radius = 0.1
     this.type = 'bomb'
     this.makeShape()
     const [x, y] = this.body.position
     this.xy = [Math.floor(x), Math.floor(y)]
-    setTimeout(() => this.detonate(), 1000)
+    this.created = this.game.world.time
+    this.game.world.on('preSolve', this.tick)
+  }
+  tick = () => {
+    const dt = this.game.world.time - this.created
+    if (dt > 0.8) {
+      this.flash = dt < 0.9
+    }
+    if (dt > 1) {
+      this.detonate()
+      this.game.world.off('preSolve', this.tick)
+    }
   }
   detonate() {
     const { position } = this.body
@@ -48,8 +60,19 @@ export default class Bomb {
       gravityScale: 0,
       collisionGroup: BULLET_GROUP,
     })
-    this.body.addShape(new p2.Circle({ radius: 0.1, collisionGroup: BULLET_GROUP }))
+    this.body.addShape(new p2.Circle({ radius: this.radius, collisionGroup: BULLET_GROUP }))
     this.id = this.body.id
     this.game.addEntity(this)
+    this.body._entity = this
+  }
+  draw(ctx) {
+    ctx.strokeStyle = this.flash ? 'red' : 'white'
+    ctx.fillStyle = this.flash ? 'white' : 'red'
+    ctx.lineWidth = 0.05
+    ctx.beginPath()
+    ctx.arc(0, 0, this.radius, 0, 2 * Math.PI)
+    ctx.stroke()
+    ctx.fill()
+    ctx.closePath()
   }
 }

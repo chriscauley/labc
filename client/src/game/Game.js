@@ -173,14 +173,17 @@ export default class Game {
   }
 
   drawBody(body) {
-    var x = body.interpolatedPosition[0],
-      y = body.interpolatedPosition[1],
-      s = body.shapes[0]
+    this.ctx.strokeStyle = 'none'
+    this.ctx.fillStyle = 'white'
+    const [x, y] = body.interpolatedPosition
+    const s = body.shapes[0]
     this.ctx.save()
     this.ctx.translate(x, y) // Translate to the center of the box
     this.ctx.rotate(body.interpolatedAngle) // Rotate to the box body frame
 
-    if (s instanceof p2.Box) {
+    if (body._entity?.draw) {
+      body._entity.draw(this.ctx)
+    } else if (s instanceof p2.Box) {
       this.ctx.fillRect(-s.width / 2, -s.height / 2, s.width, s.height)
     } else if (s instanceof p2.Circle) {
       this.ctx.beginPath()
@@ -222,8 +225,6 @@ export default class Game {
     this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
 
     // Draw all bodies
-    this.ctx.strokeStyle = 'none'
-    this.ctx.fillStyle = 'white'
     this.world.bodies.forEach((body) => this.drawBody(body))
 
     this.ctx.strokeStyle = 'red'

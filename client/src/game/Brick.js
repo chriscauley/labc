@@ -14,6 +14,7 @@ export default class Brick {
     const collisionMask = PLAYER_GROUP | BULLET_GROUP
     const shape = new p2.Box({ collisionGroup: SCENERY_GROUP, collisionMask, width, height })
     const body = (this.body = new p2.Body({ position: [x, y] }))
+    body._entity = this
     this.id = this.body.id
     body.addShape(shape)
   }
