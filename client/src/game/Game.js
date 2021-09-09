@@ -3,6 +3,7 @@ import p2 from 'p2'
 import Player from './Player'
 import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP } from './constants'
 import Bomb from './bullet/Bomb'
+import Brick from './Brick'
 
 // Collision groups
 const fixedDeltaTime = 1 / 60
@@ -12,6 +13,16 @@ window.p2 = p2
 
 const { vec2 } = p2
 
+const BRICKS = `
+0    0
+0    0
+0    0
+0 S  0
+011110
+011110
+011110
+000000`
+
 export default class Game {
   constructor(canvas, state) {
     Object.assign(this, { canvas, state })
@@ -20,7 +31,6 @@ export default class Game {
     this.init()
     this.animate = (time) => this._animate(time)
     requestAnimationFrame(this.animate)
-    this.entities = {}
   }
 
   resize() {
@@ -34,23 +44,33 @@ export default class Game {
       zoom: 50,
       rayDebugData: [],
       keys: { left: 0, right: 0, up: 0, down: 0 },
+      entities: {},
     })
 
     this.ctx.lineWidth = 1 / this.zoom
 
     // Init world
     this.world = new p2.World()
-    window.urGame = this
+    window._GAME = this
     // this.world.on('impact', (e) => console.log(e)) // non-player collisions
-
-    // Add some scenery
-    this.addStaticBox(0, 0, 1, 1)
-    this.addStaticBox(-3, 3, 3, 1)
-    this.addStaticBox(0, -1, 7, 1)
-    this.addStaticBox(-6, 0, 1, 7, Math.PI / 4)
-    this.addStaticBox(4, 5, 1, 100)
-    this.addStaticBox(0, 5, 1, 1)
-    this.addStaticCircle(-9, 1, 2, 1)
+    let start
+    BRICKS.trim()
+      .split('\n')
+      .forEach((row, y) =>
+        row.split('').forEach((s, x) => {
+          if (s === 'S') {
+            start = [x, -y]
+            return
+          } else if (s === '0') {
+            this.addStaticBox(x, -y, 1, 1)
+          } else if (s === '1') {
+            new Brick({ game: this, x, y: -y, hp: 1 })
+          } else if (s === ' ') {
+          } else {
+            throw 'Unrecognized brick: ' + s
+          }
+        }),
+      )
 
     // Create the character controller
     this.player = new Player({
@@ -58,6 +78,7 @@ export default class Game {
       collisionMask: SCENERY_GROUP,
       velocityXSmoothing: 0.0001,
       skinWidth: 0.1,
+      start,
     })
 
     // Update the character controller after each physics tick.
@@ -75,8 +96,10 @@ export default class Game {
       // console.log(_result)
     })
 
-    this.world.on('bomb-damage', (_result) => {
+    this.world.on('bomb-damage', (result) => {
       this.state.player.bomb_hits += 1 // TODO this is debug information only
+      const { damage } = result
+      this.entities[damage.body_id]?.damage?.(result.damage)
       // console.log(_result)
     })
 
@@ -237,5 +260,13 @@ export default class Game {
     const { velocity, gravity } = this.player
     const max_speed_y = Math.max(this.state.player.max_speed_y, Math.abs(velocity[1]))
     Object.assign(this.state.player, { position, velocity, max_speed_y, gravity })
+  }
+  addEntity(entity) {
+    this.entities[entity.id] = entity
+    this.world.addBody(entity.body)
+  }
+  removeEntity(entity) {
+    delete this.entities[entity.id]
+    this.world.removeBody(entity.body)
   }
 }

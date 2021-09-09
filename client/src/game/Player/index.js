@@ -16,9 +16,10 @@ function lerp(factor, start, end) {
 
 export default class Player extends Controller {
   constructor(options = {}) {
+    const { start = [0, 0] } = options
     options.body = new p2.Body({
       mass: 0,
-      position: [0, 3],
+      position: start,
       fixedRotation: true,
       damping: 0,
       type: p2.Body.KINEMATIC,
@@ -26,7 +27,7 @@ export default class Player extends Controller {
     options.body.addShape(
       new p2.Box({
         width: 8 / 16,
-        height: 2,
+        height: 14 / 16, // TODO switch between ball and standing (=40/16)
         collisionGroup: PLAYER_GROUP,
       }),
     )
