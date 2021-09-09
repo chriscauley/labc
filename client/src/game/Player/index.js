@@ -4,7 +4,7 @@ import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
 import { PLAYER_GROUP, SCENERY_GROUP, BULLET_GROUP } from '../constants'
-import BombController from '../bullet/Bomb'
+import BombController from '../inventory/BombController'
 
 window.p2 = p2
 

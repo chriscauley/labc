@@ -2,7 +2,6 @@ import p2 from 'p2'
 
 import Player from './Player'
 import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP, PLAYER_ACTIONS } from './constants'
-import Bomb from './bullet/Bomb'
 import Brick from './Brick'
 
 // Collision groups
@@ -112,23 +111,6 @@ export default class Game {
 
   close() {
     cancelAnimationFrame(this._frame)
-  }
-
-  shoot() {
-    const position = vec2.copy([0, 0], this.player.body.position)
-    if (false) {
-      // shoot bullet
-      const velocity = [5, 0]
-      const bulletBody = new p2.Body({ mass: 0.05, position, velocity, gravityScale: 0 })
-      const bulletShape = new p2.Circle({ radius: 0.2 })
-      bulletBody.addShape(bulletShape)
-      bulletShape.collisionGroup = BULLET_GROUP
-      bulletShape.collisionMask = SCENERY_GROUP
-      this.world.addBody(bulletBody)
-    } else {
-      // shoot bomb
-      new Bomb({ game: this, player: this.player })
-    }
   }
 
   addStaticCircle(x, y, radius, angle = 0) {
