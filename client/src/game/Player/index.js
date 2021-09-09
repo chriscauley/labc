@@ -4,7 +4,7 @@ import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
 import { PLAYER_GROUP, SCENERY_GROUP, BULLET_GROUP } from '../constants'
-import Bomb from '../bullet/Bomb'
+import BombController from '../bullet/Bomb'
 
 window.p2 = p2
 
@@ -43,6 +43,12 @@ export default class Player extends Controller {
     this.game = options.game
 
     this.input = vec2.create()
+    this.inventory = {
+      bomb: new BombController({ player: this, game: this.game }),
+    }
+    this.loadout = {
+      shoot1: this.inventory.bomb,
+    }
     const {
       accelerationTimeAirborne = 0.2,
       accelerationTimeGrounded = 0.1,
@@ -53,6 +59,7 @@ export default class Player extends Controller {
       wallLeap = [20, 20], // holding away from wall
       wallJumpOff = [20, 20], // holding neither
       timeToJumpApex = 0.4,
+      tech = { bomb_linked: true, bomb_triggered: true },
       maxJumpHeight = 4,
       minJumpHeight = 1,
       velocityXSmoothing = 0.2,
@@ -69,6 +76,7 @@ export default class Player extends Controller {
       wallJumpOff,
       wallLeap,
       timeToJumpApex,
+      tech,
       maxJumpHeight,
       minJumpHeight,
       velocityXSmoothing,
@@ -87,7 +95,6 @@ export default class Player extends Controller {
     this._requestJump = false
     this._requestUnJump = false
 
-    this.bombs = []
     this.keys = {
       left: 0,
       right: 0,
@@ -107,7 +114,7 @@ export default class Player extends Controller {
     if (key === 'jump') {
       this._requestJump = true
     } else if (key === 'shoot1') {
-      this.shoot()
+      this.loadout.shoot1?.press()
     }
   }
 
@@ -115,6 +122,8 @@ export default class Player extends Controller {
     this.keys[key] = 0
     if (key === 'jump') {
       this._requestUnJump = true
+    } else if (key === 'shoot1') {
+      this.loadout.shoot1?.release()
     }
   }
 
@@ -131,7 +140,6 @@ export default class Player extends Controller {
       this.world.addBody(bulletBody)
     } else {
       // shoot bomb
-      new Bomb({ game: this.game, player: this })
     }
   }
 
