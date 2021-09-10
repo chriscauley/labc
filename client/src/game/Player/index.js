@@ -190,7 +190,7 @@ export default class Player extends Controller {
     } else if (up) {
       this.state.pointing = right ^ left ? 'upward' : 'zenith'
     } else if (down) {
-      this.state.pointing = 'downward'
+      this.state.pointing = 'down'
     } else {
       this.state.pointing = null
     }

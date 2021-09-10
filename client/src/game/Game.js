@@ -13,10 +13,10 @@ window.p2 = p2
 const { vec2 } = p2
 
 const BRICKS = `
-0                  0
-0                  0
-0                  0
-0         S        0
+0        00000000000
+0        11111111110
+0        11111111110
+0    S   11111111110
 01111111111111111110
 01111111111111111110
 01111111111111111110
@@ -53,7 +53,10 @@ export default class Game {
     // Init world
     this.world = new p2.World()
     window._GAME = this
-    // this.world.on('impact', (e) => console.log(e)) // non-player collisions
+    this.world.on('impact', (e) => {
+      // non-player collisions
+      e.bodyA._entity?.impact?.(e)
+    })
     let start
     BRICKS.trim()
       .split('\n')
@@ -91,7 +94,7 @@ export default class Game {
       // console.log(_result)
     })
 
-    this.world.on('bomb-damage', (result) => {
+    this.world.on('damage', (result) => {
       this.state.player.bomb_hits += 1 // TODO this is debug information only
       const { damage } = result
       this.entities[damage.body_id]?.damage?.(result.damage)
@@ -179,7 +182,7 @@ export default class Game {
       this.cameraPos,
       this.cameraPos,
       [-body.interpolatedPosition[0], -body.interpolatedPosition[1]],
-      0.05,
+      0.2,
     )
     this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
 
@@ -224,7 +227,9 @@ export default class Game {
     Object.assign(this.state.keys, this.player.keys)
     Object.assign(this.state.state, state)
   }
-  addEntity(entity) {
+  bindEntity(entity) {
+    entity.id = entity.body.id
+    entity.body._entity = entity
     this.entities[entity.id] = entity
     this.world.addBody(entity.body)
   }

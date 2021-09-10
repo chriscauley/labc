@@ -15,6 +15,7 @@ class Bomb {
     this.created = this.player.world.time
     this.detonate_at = this.player.world.time + 1
   }
+
   detonate() {
     const { position } = this.body
     const ray = new Ray({
@@ -29,7 +30,7 @@ class Bomb {
               amount: 1,
               body_id: result.body.id,
             },
-            type: 'bomb-damage',
+            type: 'damage',
           })
       },
     })
@@ -67,9 +68,7 @@ class Bomb {
       collisionGroup: BULLET_GROUP,
     })
     this.body.addShape(new p2.Circle({ radius: RADIUS, collisionGroup: BULLET_GROUP }))
-    this.id = this.body.id
-    this.player.game.addEntity(this)
-    this.body._entity = this
+    this.player.game.bindEntity(this)
   }
 
   draw(ctx) {
