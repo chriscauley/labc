@@ -220,6 +220,7 @@ export default class Game {
     const { velocity, gravity, scaledVelocity, state } = this.player
     const max_speed_y = Math.max(this.state.player.max_speed_y, Math.abs(velocity[1]))
     Object.assign(this.state.player, { position, velocity, scaledVelocity, max_speed_y, gravity })
+    this.state.player.isWallsliding = this.player.isWallsliding()
     Object.assign(this.state.keys, this.player.keys)
     Object.assign(this.state.state, state)
   }

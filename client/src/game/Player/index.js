@@ -3,7 +3,7 @@
 import p2 from 'p2'
 import { cloneDeep } from 'lodash'
 import Controller from './Controller'
-import { PLAYER_GROUP, SCENERY_GROUP } from '../constants'
+import { PLAYER_GROUP, SCENERY_GROUP, POSTURE } from '../constants'
 import inventory from '../inventory'
 
 window.p2 = p2
@@ -23,6 +23,7 @@ export default class Player extends Controller {
       velocityXSmoothing: 0.0001,
       skinWidth: 0.1,
     })
+    start[1] += 1
     options.body = new p2.Body({
       mass: 0,
       position: start,
@@ -33,7 +34,7 @@ export default class Player extends Controller {
     options.body.addShape(
       new p2.Box({
         width: 8 / 16,
-        height: 14 / 16, // TODO switch between ball and standing (=40/16)
+        height: POSTURE._heights[POSTURE.stand], // TODO switch between ball and standing (=40/16)
         collisionGroup: PLAYER_GROUP,
       }),
     )
@@ -44,7 +45,7 @@ export default class Player extends Controller {
 
     this.input = vec2.create()
     this.state = {
-      ball: true,
+      posture: POSTURE.stand,
       health: 0, // will be healed after this.tech is set
     }
     this.inventory = {
@@ -66,7 +67,7 @@ export default class Player extends Controller {
       wallJumpOff = [20, 20], // holding neither
       timeToJumpApex = 0.4,
       tech = { bomb_linked: true, bomb_triggered: true, e_tanks: 0 },
-      maxJumpHeight = 4,
+      maxJumpHeight = 4.2,
       minJumpHeight = 1,
       velocityXSmoothing = 0.2,
       velocityXMin = 0.0001,
@@ -123,16 +124,46 @@ export default class Player extends Controller {
   }
 
   press(key) {
+    const { posture } = this.state
     this.keys[key] = 1
     if (key === 'jump') {
       this._requestJump = true
     } else if (key === 'shoot1') {
-      const slot = this.state.ball ? 'bomb' : 'shoot1'
+      const slot = posture === POSTURE.ball ? 'bomb' : 'shoot1'
       this.loadout[slot]?.press()
     } else if (key === 'shoot2') {
       this.loadout.shoot2?.press()
+    } else if (key === 'up') {
+      if (posture === POSTURE.ball) {
+        this.setPosture(POSTURE.crouch)
+      } else if (posture === POSTURE.crouch) {
+        this.setPosture(POSTURE.stand)
+      }
+    } else if (key === 'down') {
+      if (posture === POSTURE.stand) {
+        this.setPosture(POSTURE.crouch)
+      } else if (posture === POSTURE.crouch) {
+        this.setPosture(POSTURE.ball)
+      }
     }
     this.updatePointing()
+  }
+
+  setPosture(posture) {
+    this.state.posture = posture
+    const height = POSTURE._heights[posture]
+    const old_height = this.body.shapes[0].height
+    this.body.removeShape(this.body.shapes[0])
+    this.body.addShape(
+      new p2.Box({
+        width: 8 / 16,
+        height,
+        collisionGroup: PLAYER_GROUP,
+      }),
+    )
+    if (height > old_height) {
+      this.body.position[1] += height - old_height
+    }
   }
 
   release(key) {
@@ -140,7 +171,7 @@ export default class Player extends Controller {
     if (key === 'jump') {
       this._requestUnJump = true
     } else if (key === 'shoot1') {
-      const slot = this.state.ball ? 'bomb' : 'shoot1'
+      const slot = this.state.posture === POSTURE.ball ? 'bomb' : 'shoot1'
       this.loadout[slot]?.release()
     } else if (key === 'shoot2') {
       this.loadout.shoot2?.release()
@@ -163,6 +194,14 @@ export default class Player extends Controller {
     } else {
       this.state.pointing = null
     }
+  }
+
+  isWallsliding() {
+    if (this.state.posture !== POSTURE.stand) {
+      return false
+    }
+    const { collisions, velocity } = this
+    return (collisions.left || collisions.right) && !collisions.below && velocity[1] < 0
   }
 
   update(deltaTime) {
@@ -191,8 +230,8 @@ export default class Player extends Controller {
       velocity[0] = 0
     }
 
-    const wallSliding =
-      (collisions.left || collisions.right) && !collisions.below && velocity[1] < 0
+    const wallSliding = this.isWallsliding()
+
     if (wallSliding) {
       if (velocity[1] < -this.wallSlideSpeedMax) {
         velocity[1] = -this.wallSlideSpeedMax
