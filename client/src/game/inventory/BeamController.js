@@ -1,5 +1,8 @@
 import { vec2, Body, Circle } from 'p2'
+
 import { BULLET_GROUP, SCENERY_GROUP, POSTURE } from '../constants'
+import drawRay from '../drawRay'
+import vec from '../vec'
 
 class Beam {
   constructor({ player, position, velocity }) {
@@ -38,6 +41,7 @@ class Beam {
 export default class BeamController {
   constructor({ player }) {
     this.player = player
+    this.range = 10
     this.BULLET_SPEED = 25 // TODO 25 is totally arbitrary based of terminal velocity ~20
   }
   shoot() {
@@ -82,5 +86,12 @@ export default class BeamController {
       position[1]--
     }
     return [position, dxy]
+  }
+  draw(ctx) {
+    const [from, dxy] = this.getPositionAndDxy()
+    const to = vec.add(from, vec.scale(dxy, this.range))
+    ctx.lineWidth = 1 / this.player.game.zoom
+    ctx.strokeStyle = 'white'
+    drawRay(ctx, [from, to])
   }
 }

@@ -318,6 +318,8 @@ export default class Player extends Controller {
     ctx.strokeStyle = 'red'
     ctx.lineWidth = 1 / this.game.zoom
     this.last_rays.forEach((debug) => drawRay(ctx, debug))
+
+    this.loadout.shoot1.draw(ctx)
     ctx.restore()
   }
 }
