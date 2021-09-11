@@ -64,11 +64,7 @@ export default class Controller extends RaycastController {
     vec2.copy(collisions.velocityOld, velocity)
   }
 
-  moveWithZeroInput(velocity, standingOnPlatform) {
-    return this.move(velocity, ZERO, standingOnPlatform)
-  }
-
-  move(velocity, input, standingOnPlatform) {
+  move(velocity) {
     const collisions = this.collisions
     this.last_rays = []
 
@@ -84,14 +80,10 @@ export default class Controller extends RaycastController {
     this.collidedWith = {}
     this.horizontalCollisions(velocity)
     if (velocity[1] !== 0) {
-      this.verticalCollisions(velocity, input)
+      this.verticalCollisions(velocity)
     }
 
     vec2.add(this.body.position, this.body.position, velocity)
-
-    if (standingOnPlatform) {
-      collisions.below = true
-    }
   }
 
   horizontalCollisions(velocity) {
@@ -153,7 +145,7 @@ export default class Controller extends RaycastController {
     }
   }
 
-  verticalCollisions(velocity, _input) {
+  verticalCollisions(velocity) {
     const { collisions, skinWidth, raycastOrigins, ray } = this
     const directionY = sign(velocity[1])
     let rayLength = Math.abs(velocity[1]) + skinWidth
@@ -165,25 +157,6 @@ export default class Controller extends RaycastController {
       this.castRay(from, to)
 
       if (this.raycastResult.body) {
-        // TODO: fall through platform
-        /*
-				  if (hit.collider.tag === "Through") {
-				  if (directionY === 1 || hit.distance === 0) {
-				  continue;
-				  }
-				  if (collisions.fallingThroughPlatform) {
-				  continue;
-				  }
-				  if (input[1] == -1) {
-				  collisions.fallingThroughPlatform = true;
-				  setTimeout(() => {
-				  this.fallingThroughPlatform = false
-				  }, 0.5 * 1000);
-				  continue;
-				  }
-				  }
-			  */
-
         const distance = this.raycastResult.getHitDistance(ray)
         velocity[1] = (distance - skinWidth) * directionY
         rayLength = distance
