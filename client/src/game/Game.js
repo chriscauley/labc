@@ -13,17 +13,17 @@ window.p2 = p2
 const { vec2 } = p2
 
 const BRICKS = `
-0        00000000000
-0        11111111110
-0        11111111110
-0    S   11111111110
-01111111111111111110
-01111111111111111110
-01111111111111111110
-01111111111111111110
-01111111111111111110
-01111111111111111110
-00000000000000000000`
+0        000000000
+0        111111110
+0        111111110
+0    S   111111110
+011111111111111110
+011111111111111110
+011111111111111110
+0111111111111111100
+0111111111111111100
+0111111111111111100000
+000000000000000000000000000`
 
 export default class Game {
   constructor(canvas, state) {
@@ -46,6 +46,10 @@ export default class Game {
       zoom: 50,
       rayDebugData: [],
       entities: {},
+      background_entities: [],
+      TIMEOUT_ID: 1,
+      _timeouts: [],
+      mouse: {},
     })
 
     this.ctx.lineWidth = 1 / this.zoom
@@ -68,7 +72,7 @@ export default class Game {
           } else if (s === '0') {
             this.addStaticBox(x, -y, 1, 1)
           } else if (s === '1') {
-            new Brick({ game: this, x, y: -y, hp: 1 })
+            new Brick({ game: this, x, y: -y, hp: 1, type: 'moss' })
           } else if (s === ' ') {
           } else {
             throw 'Unrecognized brick: ' + s
@@ -83,6 +87,10 @@ export default class Game {
     this.world.on('postStep', () => {
       this.rayDebugData.length = 0
       this.player.update(this.world.lastTimeStep)
+      const now = this.world.time
+      const do_now = this._timeouts.filter((t) => t.when <= now)
+      this._timeouts = this._timeouts.filter((t) => t.when > now)
+      do_now.forEach((t) => t.action())
     })
 
     // Store ray debug data
@@ -110,6 +118,39 @@ export default class Game {
           keyup: () => this.player.release(a),
         }),
     )
+  }
+
+  click() {
+    const [mouse_x, mouse_y] = this.mouse.world_xy.map((i) => Math.ceil(i))
+    return {
+      entity: {
+        ...Object.values(this.entities).find((entity) => {
+          const [x, y] = entity.body.position
+          return x === mouse_x && y === mouse_y
+        }),
+      },
+    }
+  }
+
+  mousemove(event) {
+    const rect = event.target.getBoundingClientRect()
+    const x = (event.clientX - rect.left) / this.zoom
+    const y = (event.clientY - rect.top) / this.zoom
+    this.mouse.canvas_xy = [x, -y] // y is reversed in physics relative to dom
+  }
+
+  setTimeout(action, delay) {
+    const created = this.world.time
+    const when = created + delay
+    const id = this.TIMEOUT_ID
+    const timeout = { action, when, created, id }
+    this._timeouts.push(timeout)
+    this.TIMEOUT_ID++
+    return timeout
+  }
+
+  clearTimeout(timeout) {
+    this._timeouts = this._timeouts.filter((t) => t !== timeout)
   }
 
   close() {
@@ -187,11 +228,23 @@ export default class Game {
     this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
 
     // Draw all bodies
+    this.background_entities.forEach((e) => this.drawBody(e.body))
     this.world.bodies.forEach((body) => this.drawBody(body))
 
     this.ctx.strokeStyle = 'red'
     this.rayDebugData.forEach((debug) => this.drawRay(debug))
 
+    if (this.mouse.canvas_xy) {
+      const { zoom } = this
+      this.ctx.strokeStyle = 'white'
+      this.ctx.lineWidth = 0.1
+      const x =
+        Math.floor(this.mouse.canvas_xy[0] - (0.5 * width) / zoom + 0.5 - this.cameraPos[0]) - 0.5
+      const y =
+        Math.floor(this.mouse.canvas_xy[1] + (0.5 * height) / zoom + 0.5 - this.cameraPos[1]) - 0.5
+      this.mouse.world_xy = [x, y]
+      this.ctx.strokeRect(x, y, 1, 1)
+    }
     // Restore transform
     this.ctx.restore()
   }
@@ -226,15 +279,29 @@ export default class Game {
     this.state.player.isWallsliding = this.player.isWallsliding()
     Object.assign(this.state.keys, this.player.keys)
     Object.assign(this.state.state, state)
+    this.state.mouse = this.mouse
   }
+
   bindEntity(entity) {
     entity.id = entity.body.id
     entity.body._entity = entity
     this.entities[entity.id] = entity
     this.world.addBody(entity.body)
   }
+
   removeEntity(entity) {
     delete this.entities[entity.id]
     this.world.removeBody(entity.body)
+  }
+
+  backgroundEntity(entity) {
+    // moves an entity to the background so it can still be renedered without being in the world
+    this.background_entities.push(entity)
+    this.world.removeBody(entity.body)
+  }
+
+  foregroundEntity(entity) {
+    this.background_entities = this.background_entities.filter((e) => e.id !== entity.id)
+    this.world.addBody(entity.body)
   }
 }

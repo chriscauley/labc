@@ -57,7 +57,7 @@ export default class Player extends Controller {
       bomb: this.inventory.bomb,
     }
     const {
-      accelerationTimeAirborne = 0.2,
+      accelerationTimeAirborne = 0,
       accelerationTimeGrounded = 0.1,
       moveSpeed = 6,
       wallSlideSpeedMax = 3,

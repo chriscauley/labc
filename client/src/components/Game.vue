@@ -1,5 +1,5 @@
 <template>
-  <canvas width="800" height="700" ref="canvas"></canvas>
+  <canvas width="800" height="700" ref="canvas" @click="click" @mousemove="game.mousemove" />
   <code id="debug" style="display: flex">
     <div>
       <div>frame: {{ state.frame }}</div>
@@ -65,6 +65,9 @@ export default {
         return i.toFixed(2)
       }
       return i
+    },
+    click() {
+      console.log(this.game.click()) // eslint-disable-line
     },
   },
 }

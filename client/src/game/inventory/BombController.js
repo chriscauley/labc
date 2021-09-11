@@ -112,7 +112,7 @@ export default class BombController {
     const { player } = this
     const bomb = new Bomb({ player })
     const target_bomb = this.bombs.find(
-      (b) => vec2.distance(b.body.position, bomb.body.position) < 2 * RADIUS,
+      (b) => vec2.distance(b.body.position, bomb.body.position) < BLAST_RADIUS,
     )
 
     if (target_bomb) {
