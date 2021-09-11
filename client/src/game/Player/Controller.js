@@ -39,13 +39,6 @@ export default class Controller extends RaycastController {
     this.ray = new Ray({ mode: Ray.CLOSEST })
     this.raycastResult = new RaycastResult()
 
-    this.emitRayCastEvent = (() => {
-      const raycastEvent = { type: 'raycast' }
-      return () => {
-        raycastEvent.ray = this.ray
-        this.emit(raycastEvent)
-      }
-    })()
     this.lastCollisions = {}
     this.debounceCollision = (dxy) => {
       // this debouncing is mostly to stop it from colliding on all of the rays
@@ -77,13 +70,12 @@ export default class Controller extends RaycastController {
 
   move(velocity, input, standingOnPlatform) {
     const collisions = this.collisions
+    this.last_rays = []
 
     this.updateRaycastOrigins()
     this.resetCollisions(velocity)
 
-    if (velocity[0] !== 0) {
-      collisions.faceDir = sign(velocity[0])
-    }
+    collisions.faceDir = Math.sign(velocity[0]) || collisions.faceDir
 
     if (velocity[1] < 0) {
       this.descendSlope(velocity)
@@ -112,16 +104,10 @@ export default class Controller extends RaycastController {
     // }
 
     for (let i = 0; i < this.horizontalRayCount; i++) {
-      ray.collisionMask = this.collisionMask
-      vec2.copy(
-        ray.from,
-        directionX === -1 ? raycastOrigins.bottomLeft : raycastOrigins.bottomRight,
-      )
-      ray.from[1] += this.horizontalRaySpacing * i
-      vec2.set(ray.to, ray.from[0] + directionX * rayLength, ray.from[1])
-      ray.update()
-      this.world.raycast(this.raycastResult, ray)
-      this.emitRayCastEvent()
+      const from = raycastOrigins[directionX === -1 ? 'bottomLeft' : 'bottomRight'].slice()
+      from[1] += this.horizontalRaySpacing * i
+      const to = [from[0] + directionX * rayLength, from[1]]
+      this.castRay(from, to)
 
       if (this.raycastResult.body) {
         const distance = this.raycastResult.getHitDistance(ray)
@@ -173,13 +159,10 @@ export default class Controller extends RaycastController {
     let rayLength = Math.abs(velocity[1]) + skinWidth
 
     for (let i = 0; i < this.verticalRayCount; i++) {
-      ray.collisionMask = this.collisionMask
-      vec2.copy(ray.from, directionY === -1 ? raycastOrigins.bottomLeft : raycastOrigins.topLeft)
-      ray.from[0] += this.verticalRaySpacing * i + velocity[0]
-      vec2.set(ray.to, ray.from[0], ray.from[1] + directionY * rayLength)
-      ray.update()
-      this.world.raycast(this.raycastResult, ray)
-      this.emitRayCastEvent()
+      const from = raycastOrigins[directionY === -1 ? 'bottomLeft' : 'topLeft'].slice()
+      from[0] += this.verticalRaySpacing * i + velocity[0]
+      const to = [from[0], from[1] + directionY * rayLength]
+      this.castRay(from, to)
 
       if (this.raycastResult.body) {
         // TODO: fall through platform
@@ -225,16 +208,10 @@ export default class Controller extends RaycastController {
       const directionX = sign(velocity[0])
       rayLength = Math.abs(velocity[0]) + skinWidth
 
-      ray.collisionMask = this.collisionMask
-      vec2.copy(
-        ray.from,
-        directionX === -1 ? raycastOrigins.bottomLeft : raycastOrigins.bottomRight,
-      )
-      ray.from[1] += velocity[1]
-      vec2.set(ray.to, ray.from[0] + directionX * rayLength, ray.from[1])
-      ray.update()
-      this.world.raycast(this.raycastResult, ray)
-      this.emitRayCastEvent()
+      const from = raycastOrigins[directionX === -1 ? 'bottomLeft' : 'bottomRight'].slice()
+      from[1] += velocity[1]
+      const to = [from[0] + directionX * rayLength, from[1]]
+      this.castRay(from, to)
 
       if (this.raycastResult.body) {
         const slopeAngle = angle(this.raycastResult.normal, UNIT_Y)
@@ -264,12 +241,9 @@ export default class Controller extends RaycastController {
     const { raycastOrigins, collisions, ray } = this
     const directionX = sign(velocity[0])
 
-    ray.collisionMask = this.collisionMask
-    vec2.copy(ray.from, directionX === -1 ? raycastOrigins.bottomRight : raycastOrigins.bottomLeft)
-    vec2.set(ray.to, ray.from[0], ray.from[1] - 1e6)
-    ray.update()
-    this.world.raycast(this.raycastResult, ray)
-    this.emitRayCastEvent()
+    const from = raycastOrigins[directionX === -1 ? 'bottomRight' : 'bottomLeft']
+    const to = [from[0], from[1] - 1e6]
+    this.castRay(from, to)
 
     if (this.raycastResult.body) {
       const slopeAngle = angle(this.raycastResult.normal, UNIT_Y)
@@ -293,5 +267,17 @@ export default class Controller extends RaycastController {
     }
 
     this.raycastResult.reset()
+  }
+
+  castRay(from, to) {
+    const ray = this.ray
+    ray.collisionMask = this.collisionMask // TODO does this ever change?
+    vec2.copy(ray.from, from)
+    vec2.copy(ray.to, to)
+    ray.update()
+    this.world.raycast(this.raycastResult, ray)
+
+    // store ray for rendering
+    this.last_rays.push([from, to])
   }
 }

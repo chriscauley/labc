@@ -44,7 +44,6 @@ export default class Game {
     Object.assign(this, {
       cameraPos: [0, 0],
       zoom: 50,
-      rayDebugData: [],
       entities: {},
       background_entities: [],
       TIMEOUT_ID: 1,
@@ -73,29 +72,25 @@ export default class Game {
             this.addStaticBox(x, -y, 1, 1)
           } else if (s === '1') {
             new Brick({ game: this, x, y: -y, hp: 1, type: 'moss' })
-          } else if (s === ' ') {
+          } else if (s === ' ' || s === '_') {
           } else {
             throw 'Unrecognized brick: ' + s
           }
         }),
       )
 
+    this.addStaticBox(-5, 0, 1, 10, -Math.PI / 4)
+
     // Create the character controller
     this.player = new Player({ game: this, world: this.world, start })
 
     // Update the character controller after each physics tick.
     this.world.on('postStep', () => {
-      this.rayDebugData.length = 0
       this.player.update(this.world.lastTimeStep)
       const now = this.world.time
       const do_now = this._timeouts.filter((t) => t.when <= now)
       this._timeouts = this._timeouts.filter((t) => t.when > now)
       do_now.forEach((t) => t.action())
-    })
-
-    // Store ray debug data
-    this.player.on('raycast', ({ ray }) => {
-      this.rayDebugData.push([ray.from[0], ray.from[1], ray.to[0], ray.to[1]])
     })
 
     this.player.on('collide', (_result) => {
@@ -198,14 +193,6 @@ export default class Game {
     this.ctx.restore()
   }
 
-  drawRay([startX, startY, endX, endY]) {
-    this.ctx.beginPath()
-    this.ctx.moveTo(startX, startY)
-    this.ctx.lineTo(endX, endY)
-    this.ctx.stroke()
-    this.ctx.closePath()
-  }
-
   render() {
     const { width, height } = this.canvas
     this.ctx.fillStyle = 'black'
@@ -230,9 +217,6 @@ export default class Game {
     // Draw all bodies
     this.background_entities.forEach((e) => this.drawBody(e.body))
     this.world.bodies.forEach((body) => this.drawBody(body))
-
-    this.ctx.strokeStyle = 'red'
-    this.rayDebugData.forEach((debug) => this.drawRay(debug))
 
     if (this.mouse.canvas_xy) {
       const { zoom } = this

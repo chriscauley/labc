@@ -5,6 +5,7 @@ import { cloneDeep } from 'lodash'
 import Controller from './Controller'
 import { PLAYER_GROUP, SCENERY_GROUP, POSTURE } from '../constants'
 import inventory from '../inventory'
+import drawRay from '../drawRay'
 
 window.p2 = p2
 
@@ -42,6 +43,7 @@ export default class Player extends Controller {
 
     super(options)
     this.game = options.game
+    this.game.bindEntity(this)
 
     this.input = vec2.create()
     this.state = {
@@ -303,5 +305,19 @@ export default class Player extends Controller {
     if (collisions.above || collisions.below) {
       velocity[1] = 0
     }
+  }
+
+  draw(ctx) {
+    const [x, y] = this.body.position
+    const { width, height } = this.body.shapes[0]
+    ctx.fillStyle = '#888800'
+    ctx.fillRect(-width / 2, -height / 2, width, height)
+
+    ctx.save()
+    ctx.translate(-x, -y)
+    ctx.strokeStyle = 'red'
+    ctx.lineWidth = 1 / this.game.zoom
+    this.last_rays.forEach((debug) => drawRay(ctx, debug))
+    ctx.restore()
   }
 }

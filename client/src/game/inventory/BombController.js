@@ -81,7 +81,7 @@ class Bomb {
       colors = ['red', 'white']
     }
     ;[ctx.fillStyle, ctx.strokeStyle] = colors
-    ctx.lineWidth = 0.05
+    ctx.lineWidth = 2 / this.player.game.zoom
     ctx.beginPath()
     ctx.arc(0, 0, RADIUS, 0, 2 * Math.PI)
     ctx.stroke()
