@@ -1,4 +1,4 @@
-import EditRoom from './EditRoom.vue'
+import EditRoom from './EditRoom/index.vue'
 import Home from './Home.vue'
 import Play from './Play.vue'
 

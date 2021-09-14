@@ -1,10 +1,11 @@
 import unrest from '@unrest/vue'
 
 import admin_options from './admin'
-import world from './world'
 import room from './room'
+import tool from './tool'
+import world from './world'
 
-const store = unrest.Store({ room, world })
+const store = unrest.Store({ room, tool, world })
 const admin_modules = ['room', 'world']
 
 admin_modules.forEach((model_name) =>
