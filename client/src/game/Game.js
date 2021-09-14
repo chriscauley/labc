@@ -25,9 +25,10 @@ const BRICKS = `
 0111111111111111100000
 000000000000000000000000000`
 
-export default class Game {
-  constructor(canvas, state) {
-    Object.assign(this, { canvas, state })
+export default class Game extends p2.EventEmitter {
+  constructor(canvas) {
+    super()
+    this.canvas = canvas
     this.resize()
 
     this.init()
@@ -49,6 +50,7 @@ export default class Game {
       TIMEOUT_ID: 1,
       _timeouts: [],
       mouse: {},
+      frame: 0,
     })
 
     this.ctx.lineWidth = 1 / this.zoom
@@ -98,7 +100,6 @@ export default class Game {
     })
 
     this.world.on('damage', (result) => {
-      this.state.player.bomb_hits += 1 // TODO this is debug information only
       const { damage } = result
       this.entities[damage.body_id]?.damage?.(result.damage)
       // console.log(_result)
@@ -221,15 +222,16 @@ export default class Game {
     this.world.bodies.forEach((body) => this.drawBody(body))
 
     if (this.mouse.canvas_xy) {
-      const { zoom } = this
-      this.ctx.strokeStyle = 'white'
-      this.ctx.lineWidth = 0.1
-      const x =
-        Math.floor(this.mouse.canvas_xy[0] - (0.5 * width) / zoom + 0.5 - this.cameraPos[0]) - 0.5
-      const y =
-        Math.floor(this.mouse.canvas_xy[1] + (0.5 * height) / zoom + 0.5 - this.cameraPos[1]) - 0.5
+      const zoom = this.zoom
+      const [mouse_x, mouse_y] = this.mouse.canvas_xy
+      const x = Math.floor(mouse_x - (0.5 * width) / zoom + 0.5 - this.cameraPos[0]) - 0.5
+      const y = Math.floor(mouse_y + (0.5 * height) / zoom + 0.5 - this.cameraPos[1]) - 0.5
       this.mouse.world_xy = [x, y]
-      this.ctx.strokeRect(x, y, 1, 1)
+      if (this.ui?.hover) {
+        this.ctx.strokeStyle = 'white'
+        this.ctx.lineWidth = 0.1
+        this.ctx.strokeRect(x, y, 1, 1)
+      }
     }
     // Restore transform
     this.ctx.restore()
@@ -237,7 +239,7 @@ export default class Game {
 
   // Animation loop
   _animate(time) {
-    this.state.frame++
+    this.frame++
     cancelAnimationFrame(this._frame)
     this._frame = requestAnimationFrame(this.animate)
 
@@ -251,25 +253,12 @@ export default class Game {
     // Render scene
     this.render()
 
-    this.updateDebugLog()
-
+    this.emit({ type: 'draw', ctx: this.ctx })
     this.lastTime = time
   }
 
   stop() {
     cancelAnimationFrame(this._frame)
-  }
-
-  updateDebugLog() {
-    Object.assign(this.state.collisions, this.player.collisions)
-    const { position } = this.player.body
-    const { velocity, gravity, scaledVelocity, state } = this.player
-    const max_speed_y = Math.max(this.state.player.max_speed_y, Math.abs(velocity[1]))
-    Object.assign(this.state.player, { position, velocity, scaledVelocity, max_speed_y, gravity })
-    this.state.player.isWallsliding = this.player.isWallsliding()
-    Object.assign(this.state.keys, this.player.keys)
-    Object.assign(this.state.state, state)
-    this.state.mouse = this.mouse
   }
 
   bindEntity(entity) {

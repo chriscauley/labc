@@ -23,9 +23,9 @@ const room = {
         attrs: {
           class: 'fa fa-map-o',
           to: `/room/edit/${item.id}/`,
-        }
-      })
-    }
+        },
+      }),
+    },
   ],
 }
 

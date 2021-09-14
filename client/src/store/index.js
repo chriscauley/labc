@@ -15,5 +15,4 @@ admin_modules.forEach((model_name) =>
   }),
 )
 
-
 export default store
