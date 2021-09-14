@@ -6,6 +6,7 @@ import Controller from './Controller'
 import { PLAYER_GROUP, SCENERY_GROUP, POSTURE } from '../constants'
 import inventory from '../inventory'
 import drawRay from '../drawRay'
+import getBeamRays from './getBeamRays'
 
 window.p2 = p2
 
@@ -194,7 +195,7 @@ export default class Player extends Controller {
     } else if (down) {
       this.state.pointing = 'down'
     } else {
-      this.state.pointing = null
+      this.state.pointing = undefined
     }
   }
 
@@ -305,6 +306,7 @@ export default class Player extends Controller {
     if (collisions.above || collisions.below) {
       velocity[1] = 0
     }
+    this.beam_rays = getBeamRays(this)
   }
 
   draw(ctx) {
@@ -313,13 +315,17 @@ export default class Player extends Controller {
     ctx.fillStyle = '#888800'
     ctx.fillRect(-width / 2, -height / 2, width, height)
 
+    ctx.strokeStyle = 'red'
+    ctx.lineWidth = 1 / this.game.zoom
+    this.beam_rays.forEach((beam) => drawRay(ctx, beam))
+
     ctx.save()
     ctx.translate(-x, -y)
     ctx.strokeStyle = 'red'
     ctx.lineWidth = 1 / this.game.zoom
     this.last_rays.forEach((debug) => drawRay(ctx, debug))
 
-    this.loadout.shoot1.draw(ctx)
+    // this.loadout.shoot1.draw(ctx)
     ctx.restore()
   }
 }

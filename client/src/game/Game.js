@@ -118,6 +118,8 @@ export default class Game {
   click() {
     const [mouse_x, mouse_y] = this.mouse.world_xy.map((i) => Math.ceil(i))
     return {
+      mouse_x,
+      mouse_y,
       entity: {
         ...Object.values(this.entities).find((entity) => {
           const [x, y] = entity.body.position
@@ -252,6 +254,10 @@ export default class Game {
     this.updateDebugLog()
 
     this.lastTime = time
+  }
+
+  stop() {
+    cancelAnimationFrame(this._frame)
   }
 
   updateDebugLog() {

@@ -3,7 +3,6 @@ import RaycastController from './RaycastController'
 
 const { vec2, Ray, RaycastResult } = p2
 
-const ZERO = vec2.create()
 const UNIT_Y = vec2.fromValues(0, 1)
 const DEG_TO_RAD = Math.PI / 180
 

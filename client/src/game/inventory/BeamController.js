@@ -1,53 +1,59 @@
-import { vec2, Body, Circle } from 'p2'
+import { sortBy } from 'lodash'
+import { vec2, Ray, RaycastResult } from 'p2'
 
-import { BULLET_GROUP, SCENERY_GROUP, POSTURE } from '../constants'
+import { SCENERY_GROUP, POSTURE } from '../constants'
 import drawRay from '../drawRay'
 import vec from '../vec'
-
-class Beam {
-  constructor({ player, position, velocity }) {
-    this.player = player
-    this.makeShape(position, velocity)
-  }
-  makeShape(position, velocity) {
-    this.body = new Body({
-      mass: 0.05,
-      position,
-      velocity,
-      gravityScale: 0,
-      damping: 0,
-      collisionResponse: false,
-    })
-    const shape = new Circle({ radius: 0.2 })
-    shape.collisionGroup = BULLET_GROUP
-    shape.collisionMask = SCENERY_GROUP
-    this.body.addShape(shape)
-    this.player.game.bindEntity(this)
-  }
-  impact(result) {
-    this.player.world.emit({
-      type: 'damage',
-      damage: {
-        type: 'beam',
-        player: this.player.id,
-        amount: 1,
-        body_id: result.bodyB.id,
-      },
-    })
-    this.player.game.removeEntity(this)
-  }
-}
 
 export default class BeamController {
   constructor({ player }) {
     this.player = player
     this.range = 10
     this.BULLET_SPEED = 25 // TODO 25 is totally arbitrary based of terminal velocity ~20
+    this.ray = new Ray({ mode: Ray.CLOSEST, collisionMask: SCENERY_GROUP })
+    this.raycastResult = new RaycastResult()
   }
   shoot() {
-    const [position, dxy] = this.getPositionAndDxy()
-    const velocity = [dxy[0] * this.BULLET_SPEED, dxy[1] * this.BULLET_SPEED]
-    new Beam({ player: this.player, position, velocity })
+    const { ray, raycastResult } = this
+    let hits = []
+
+    // use the center between the from of first two rays as the "start" of all rays
+    const [ray0, ray1] = this.player.beam_rays
+    const start = [(ray0[0][0] + ray1[0][0]) / 2, (ray0[0][1] + ray1[0][1]) / 2]
+
+    this.player.beam_rays.forEach(([from, to], ray_no) => {
+      vec2.add(ray.from, this.player.body.position, from)
+      vec2.add(ray.to, this.player.body.position, to)
+      ray.update()
+      this.player.world.raycast(raycastResult, ray)
+      if (raycastResult.body) {
+        let ray_to_hit = raycastResult.getHitDistance(ray)
+        if (this.player.world.hitTest(ray.from, [raycastResult.body]).length) {
+          ray_to_hit = 0
+        }
+        const player_to_ray = vec2.distance(start, from)
+        const player_to_ray_hit = ray_to_hit + player_to_ray
+        // const player_to_body_center = vec2.distance(start, raycastResult.body.position)
+        hits.push({
+          ray_no,
+          body: raycastResult.body,
+          distance: player_to_ray_hit,
+        })
+      }
+      raycastResult.reset()
+    })
+    hits = sortBy(hits, 'distance')
+    if (hits.length) {
+      this.player.world.emit({
+        type: 'damage',
+        damage: {
+          type: 'beam',
+          player: this.player.id,
+          amount: 1,
+          body_id: hits[0].body.id,
+        },
+      })
+    }
   }
   press() {
     this.shoot()
