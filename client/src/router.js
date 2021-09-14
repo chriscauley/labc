@@ -6,6 +6,7 @@ import views from '@/views'
 
 const routes = [
   ...Unrest.loadViews(views),
+  ...Unrest.loadViews(Unrest.admin.views),
   // ...auth.routes,
 ]
 
