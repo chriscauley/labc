@@ -6,6 +6,9 @@ import router from '@/router'
 import App from '@/App.vue'
 import store from '@/store'
 
+import '@unrest/tailwind/dist.css'
+import '@/styles/base.scss'
+
 createApp(App)
   .use(router)
   .use(store)

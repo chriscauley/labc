@@ -1,18 +1,6 @@
 <template>
   <div class="ur-toolbar">
-    <div class="ur-toolbar__row" v-if="selected_tool?.children">
-      <div
-        v-for="(child, i) in selected_tool.children"
-        :key="child.slug"
-        @click="child.click"
-        :class="child.class"
-        :title="child.slug"
-      >
-        <i :class="child.icon" />
-        <div v-if="!ctrl_down" class="flaire">{{ i + 1 }}</div>
-      </div>
-    </div>
-    <div class="ur-toolbar__row">
+    <div class="ur-toolbar__row btn-group">
       <div
         v-for="(tool, i) in tools"
         :key="tool.name"
@@ -22,6 +10,18 @@
       >
         <i :class="tool.icon" />
         <div v-if="i !== 0 && ctrl_down" class="flaire">{{ i }}</div>
+      </div>
+    </div>
+    <div class="ur-toolbar__row btn-group" v-if="selected_tool?.children">
+      <div
+        v-for="(child, i) in selected_tool.children"
+        :key="child.slug"
+        @click="child.click"
+        :class="child.class"
+        :title="child.slug"
+      >
+        <i :class="child.icon" />
+        <div v-if="!ctrl_down" class="flaire">{{ i + 1 }}</div>
       </div>
     </div>
   </div>
