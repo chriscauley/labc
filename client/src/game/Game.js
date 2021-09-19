@@ -41,6 +41,7 @@ export default class Game extends p2.EventEmitter {
       mouse: { canvas_xy: [-1e6, -1e6], world_xy: [-1e6, -1e6], _world_xy: [-1e6, -1e6] },
       frame: 0,
       ui: [], // random crap to draw on canvas
+      actions: {}, // input map
     })
 
     if (options.string_room) {
@@ -66,19 +67,29 @@ export default class Game extends p2.EventEmitter {
     this.addStaticBox(-5, 0, 1, 10, -Math.PI / 4)
 
     // Create the character controller
-    this.player = new Player({ game: this, world: this.world, start: options.room.json.start })
+    if (options.room.json.start) {
+      this.player = new Player({ game: this, world: this.world, start: options.room.json.start })
+      this.world.on('postStep', () => {
+        this.player.update(this.world.lastTimeStep)
+      })
+      this.player?.on('collide', (_result) => {
+        // console.log(_result)
+      })
+      // Set up key listeners
+      PLAYER_ACTIONS.forEach((a) => {
+        this.actions[a] = {
+          keydown: () => this.player.press(a),
+          keyup: () => this.player.release(a),
+        }
+      })
+    }
 
     // Update the character controller after each physics tick.
     this.world.on('postStep', () => {
-      this.player.update(this.world.lastTimeStep)
       const now = this.world.time
       const do_now = this._timeouts.filter((t) => t.when <= now)
       this._timeouts = this._timeouts.filter((t) => t.when > now)
       do_now.forEach((t) => t.action())
-    })
-
-    this.player.on('collide', (_result) => {
-      // console.log(_result)
     })
 
     this.world.on('damage', (result) => {
@@ -86,16 +97,6 @@ export default class Game extends p2.EventEmitter {
       this.entities[damage.body_id]?.damage?.(result.damage)
       // console.log(_result)
     })
-
-    // Set up key listeners
-    this.actions = {}
-    PLAYER_ACTIONS.forEach(
-      (a) =>
-        (this.actions[a] = {
-          keydown: () => this.player.press(a),
-          keyup: () => this.player.release(a),
-        }),
-    )
   }
 
   click() {
@@ -189,14 +190,18 @@ export default class Game extends p2.EventEmitter {
     this.ctx.save()
     this.ctx.translate(width / 2, height / 2) // Translate to the center
     this.ctx.scale(this.zoom, -this.zoom) // Zoom in and flip y axis
-    const { body } = this.player
 
-    vec2.lerp(
-      this.cameraPos,
-      this.cameraPos,
-      [-body.interpolatedPosition[0], -body.interpolatedPosition[1]],
-      0.2,
-    )
+    if (this.player) {
+      const { body } = this.player
+
+      vec2.lerp(
+        this.cameraPos,
+        this.cameraPos,
+        [-body.interpolatedPosition[0], -body.interpolatedPosition[1]],
+        0.2,
+      )
+    }
+
     this.ctx.translate(this.cameraPos[0], this.cameraPos[1])
 
     // Draw all bodies

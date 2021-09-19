@@ -37,16 +37,19 @@ export default {
     },
     updateDebugLog() {
       const { state, game } = this
-      const { position } = game.player.body
-      const { velocity, gravity, scaledVelocity } = game.player
-      const max_speed_y = Math.max(state.player?.max_speed_y || 0, Math.abs(velocity[1]))
-      state.misc = { frame: game.frame, position, velocity, scaledVelocity, max_speed_y, gravity }
-      Object.assign(state.misc, game.player.state)
-      state.misc.isWallsliding = game.player.isWallsliding()
-
-      state.collisions = game.player.collisions
-      state.keys = game.player.keys
       state.mouse = game.mouse
+      state.misc = { frame: game.frame }
+      if (game.player) {
+        const { position } = game.player.body
+        const { velocity, gravity, scaledVelocity } = game.player
+        const max_speed_y = Math.max(state.player?.max_speed_y || 0, Math.abs(velocity[1]))
+        Object.assign(state.misc, { position, velocity, scaledVelocity, max_speed_y, gravity })
+        Object.assign(state.misc, game.player.state)
+        state.misc.isWallsliding = game.player.isWallsliding()
+
+        state.collisions = game.player.collisions
+        state.keys = game.player.keys
+      }
     },
   },
 }

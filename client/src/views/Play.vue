@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     mousetrap() {
-      if (!this.game) {
+      if (!this.game?.player) {
         return {}
       }
       const { up, left, right, down, aimup, aimdown, shoot1, jump } = this.game.actions
