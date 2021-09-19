@@ -309,7 +309,7 @@ export default class Player extends Controller {
     this.beam_rays = getBeamRays(this)
   }
 
-  draw(ctx) {
+  draw = (ctx) => {
     const [x, y] = this.body.position
     const { width, height } = this.body.shapes[0]
     ctx.fillStyle = '#888800'

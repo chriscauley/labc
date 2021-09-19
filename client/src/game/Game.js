@@ -6,7 +6,7 @@ import Brick from './Brick'
 import { fromString } from './Room'
 
 // Collision groups
-const fixedDeltaTime = 1 / 60
+const FIXED_DELTA_TIME = 1 / 60
 const MAX_SUB_STEPS = 10
 
 window.p2 = p2
@@ -20,7 +20,6 @@ export default class Game extends p2.EventEmitter {
     this.resize()
 
     this.init(options)
-    this.animate = (time) => this._animate(time)
     requestAnimationFrame(this.animate)
   }
 
@@ -42,6 +41,7 @@ export default class Game extends p2.EventEmitter {
       frame: 0,
       ui: [], // random crap to draw on canvas
       actions: {}, // input map
+      paused: true,
     })
 
     if (options.string_room) {
@@ -97,6 +97,7 @@ export default class Game extends p2.EventEmitter {
       this.entities[damage.body_id]?.damage?.(result.damage)
       // console.log(_result)
     })
+    this.world.step(FIXED_DELTA_TIME, FIXED_DELTA_TIME, MAX_SUB_STEPS)
   }
 
   click() {
@@ -245,23 +246,24 @@ export default class Game extends p2.EventEmitter {
   }
 
   // Animation loop
-  _animate(time) {
-    this.frame++
+  animate = (time) => {
     cancelAnimationFrame(this._frame)
     this._frame = requestAnimationFrame(this.animate)
 
+    this.tick(time) // moe game froward in time
+    this.render() // draw to canvas
+    this.emit({ type: 'draw', ctx: this.ctx })
+    this.lastTime = time
+  }
+
+  tick(time) {
     // Compute elapsed time since last frame
     let deltaTime = this.lastTime ? (time - this.lastTime) / 1000 : 0
     deltaTime = Math.min(1 / 10, deltaTime)
 
     // Move physics bodies forward in time
-    this.world.step(fixedDeltaTime, deltaTime, MAX_SUB_STEPS)
-
-    // Render scene
-    this.render()
-
-    this.emit({ type: 'draw', ctx: this.ctx })
-    this.lastTime = time
+    !this.paused && this.world.step(FIXED_DELTA_TIME, deltaTime, MAX_SUB_STEPS)
+    this.frame++
   }
 
   stop() {
