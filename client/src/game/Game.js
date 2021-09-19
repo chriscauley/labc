@@ -3,6 +3,7 @@ import p2 from 'p2'
 import Player from './Player'
 import { SCENERY_GROUP, BULLET_GROUP, PLAYER_GROUP, PLAYER_ACTIONS } from './constants'
 import Brick from './Brick'
+import { fromString } from './Room'
 
 // Collision groups
 const fixedDeltaTime = 1 / 60
@@ -12,26 +13,13 @@ window.p2 = p2
 
 const { vec2 } = p2
 
-const BRICKS = `
-0        000000000
-0        111111110
-0        111111110
-0    S   111111110
-011111111111111110
-011111111111111110
-011111111111111110
-0111111111111111100
-0111111111111111100
-0111111111111111100000
-000000000000000000000000000`
-
 export default class Game extends p2.EventEmitter {
-  constructor(canvas) {
+  constructor(canvas, options) {
     super()
     this.canvas = canvas
     this.resize()
 
-    this.init()
+    this.init(options)
     this.animate = (time) => this._animate(time)
     requestAnimationFrame(this.animate)
   }
@@ -40,7 +28,7 @@ export default class Game extends p2.EventEmitter {
     this.ctx = this.canvas.getContext('2d')
   }
 
-  init() {
+  init(options) {
     // Init canvas
     Object.assign(this, {
       cameraPos: [0, 0],
@@ -55,6 +43,9 @@ export default class Game extends p2.EventEmitter {
       ui: [], // random crap to draw on canvas
     })
 
+    if (options.string_room) {
+      options.room = fromString(options.string_room)
+    }
     this.ctx.lineWidth = 1 / this.zoom
 
     // Init world
@@ -64,29 +55,18 @@ export default class Game extends p2.EventEmitter {
       // non-player collisions
       e.bodyA._entity?.impact?.(e)
     })
-    let start
-    BRICKS.trim()
-      .split('\n')
-      .forEach((row, y) =>
-        row.split('').forEach((s, x) => {
-          if (s === 'S') {
-            start = [x, -y]
-            return
-          } else if (s === '0') {
-            this.addStaticBox(x, -y, 1, 1)
-          } else if (s === '1') {
-            new Brick({ game: this, x, y: -y, hp: 1, type: 'moss' })
-          } else if (s === ' ' || s === '_') {
-          } else {
-            throw 'Unrecognized brick: ' + s
-          }
-        }),
-      )
+
+    options.room.json.static_boxes.forEach(({ x, y, width, height, angle }) => {
+      this.addStaticBox(x, y, width, height, angle)
+    })
+    options.room.json.bricks.forEach(({ x, y, type }) => {
+      new Brick({ game: this, x, y, type })
+    })
 
     this.addStaticBox(-5, 0, 1, 10, -Math.PI / 4)
 
     // Create the character controller
-    this.player = new Player({ game: this, world: this.world, start })
+    this.player = new Player({ game: this, world: this.world, start: options.room.json.start })
 
     // Update the character controller after each physics tick.
     this.world.on('postStep', () => {

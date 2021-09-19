@@ -11,10 +11,11 @@ import DebugGame from '@/components/DebugGame'
 import GameCanvas from '@/components/Game'
 
 import Game from '@/game/Game'
+import _games from '@/game/_games'
 
 export default {
   __route: {
-    path: '/play/',
+    path: '/play/:type/:room_id/',
   },
   components: { DebugGame, GameCanvas },
   mixins: [Mousetrap.Mixin],
@@ -31,7 +32,12 @@ export default {
     },
   },
   mounted() {
-    this.game = new Game(document.getElementById('game-canvas'))
+    const options = {}
+    const { type, room_id } = this.$route.params
+    if (type === 'string_room') {
+      options.string_room = _games.strings[room_id]
+    }
+    this.game = new Game(document.getElementById('game-canvas'), options)
     this.game.on('draw', this.draw)
   },
   unmounted() {
@@ -43,8 +49,7 @@ export default {
       console.log(data) // eslint-disable-line
     },
     draw(_event, _data) {
-      // TODO this will eventually be dynamic
-      this.game.ui = { hover: true }
+      this.game.ui = [{ type: 'box', xy: this.game.mouse.world_xy }]
     },
   },
 }
