@@ -49,8 +49,10 @@ export default class Game extends p2.EventEmitter {
       background_entities: [],
       TIMEOUT_ID: 1,
       _timeouts: [],
-      mouse: {},
+      // start mouse offscreen
+      mouse: { canvas_xy: [-1e6, -1e6], world_xy: [-1e6, -1e6], _world_xy: [-1e6, -1e6] },
       frame: 0,
+      ui: [], // random crap to draw on canvas
     })
 
     this.ctx.lineWidth = 1 / this.zoom
@@ -224,15 +226,35 @@ export default class Game extends p2.EventEmitter {
     if (this.mouse.canvas_xy) {
       const zoom = this.zoom
       const [mouse_x, mouse_y] = this.mouse.canvas_xy
-      const x = Math.floor(mouse_x - (0.5 * width) / zoom + 0.5 - this.cameraPos[0]) - 0.5
-      const y = Math.floor(mouse_y + (0.5 * height) / zoom + 0.5 - this.cameraPos[1]) - 0.5
-      this.mouse.world_xy = [x, y]
-      if (this.ui?.hover) {
-        this.ctx.strokeStyle = 'white'
-        this.ctx.lineWidth = 0.1
-        this.ctx.strokeRect(x, y, 1, 1)
-      }
+      const x = mouse_x - (0.5 * width) / zoom - this.cameraPos[0]
+      const y = mouse_y + (0.5 * height) / zoom - this.cameraPos[1]
+      this.mouse._world_xy = [x, y]
+      this.mouse.world_xy = [Math.floor(x + 0.5) - 0.5, Math.floor(y + 0.5) - 0.5]
     }
+
+    this.ui.forEach((item) => {
+      this.ctx.fillStyle = 'white'
+      this.ctx.strokeStyle = 'white'
+      this.ctx.lineWidth = 0.1
+      if (item.type === 'box') {
+        this.ctx.strokeRect(item.xy[0], item.xy[1], 1, 1)
+      } else if (item.type === 'dot') {
+        const r = 0.1
+        this.ctx.beginPath()
+        this.ctx.arc(item.xy[0], item.xy[1], r, 0, 2 * Math.PI)
+        this.ctx.fill()
+      } else if (item.type === 'polyline') {
+        if (item.xys.length) {
+          this.ctx.setLineDash(item.lineDash || [])
+          this.ctx.beginPath()
+          this.ctx.moveTo(item.xys[0][0], item.xys[0][1])
+          item.xys.forEach((xy) => this.ctx.lineTo(xy[0], xy[1]))
+          this.ctx.stroke()
+          this.ctx.setLineDash([])
+        }
+      }
+    })
+
     // Restore transform
     this.ctx.restore()
   }
